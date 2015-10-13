@@ -30,3 +30,7 @@
 #BLE
 *.pbi
 *.pbi.out
+*.pbi.cout
+
+#settings files
+settings/
