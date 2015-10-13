@@ -31,6 +31,9 @@
 *.pbi
 *.pbi.out
 *.pbi.cout
+*.pbd
+*.dep
+*.pbd.brows
 
 #settings files
 settings/

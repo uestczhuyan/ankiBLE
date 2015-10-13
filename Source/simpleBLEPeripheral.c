@@ -338,11 +338,11 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
   }
 
-  // Initialize GATT attributes
+  // Initialize GATT attributes 添加了4个Service 服务
   GGS_AddService( GATT_ALL_SERVICES );            // GAP
   GATTServApp_AddService( GATT_ALL_SERVICES );    // GATT attributes
   DevInfo_AddService();                           // Device Information Service
-  SimpleProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
+  SimpleProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile anki需要修改的服务
 #if defined FEATURE_OAD
   VOID OADTarget_AddService();                    // OAD Profile
 #endif
@@ -354,10 +354,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
     uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = { 1, 2, 3, 4, 5 };
+    
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, sizeof ( uint8 ), &charValue1 );
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, sizeof ( uint8 ), &charValue2 );
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
-    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof ( uint8 ), &charValue4 );
+    //前面3句只是对对象值的设置，这句代码 进行了，Service的characteristic设置，Process Client Characteristis Configuration Change
+    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof ( uint8 ), &charValue4 ); 
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR5, SIMPLEPROFILE_CHAR5_LEN, charValue5 );
   }
 
@@ -366,7 +368,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   SK_AddService( GATT_ALL_SERVICES ); // Simple Keys Profile
 
-  // Register for all key events - This app will handle all key events
+  // Register for all key events - This app will handle all key events。 注册按钮事件，OSAL处理按钮事件
   RegisterForKeys( simpleBLEPeripheral_TaskID );
 
   // makes sure LEDs are off
@@ -406,6 +408,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
   // Register callback with SimpleGATTprofile
+  // 该回调被 simpleProfile_WriteAttrCB 方法触发，simpleProfileCBs 包含此方法，在SimpleProfile_AddService 的时候注册到GATT协议栈服务中
+  //值改变之后，通知 PROFILES--->SimpleProfileCBs.simpleProfile_WriteAttrCB  然后再通知APP--->simpleBLEPeripheral_SimpleProfileCBs
   VOID SimpleProfile_RegisterAppCBs( &simpleBLEPeripheral_SimpleProfileCBs );
 
   // Enable clock divide on halt
@@ -420,7 +424,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
 #endif // defined ( DC_DC_P0_7 )
 
-  // Setup a delayed profile startup
+  // Setup a delayed profile startup  发起BLE连接初始化相关服务。下面方法对 SBP_START_DEVICE_EVT 事件进行处理
   osal_set_event( simpleBLEPeripheral_TaskID, SBP_START_DEVICE_EVT );
 
 }
@@ -440,6 +444,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
  */
 uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 {
+  //tasksArr[] 是11个Task的最后一个，由OSAL 系统进行调度。有时间来了，用该方法处理。初始化OSAL_SimpleBLEperipheal
 
   VOID task_id; // OSAL required parameter that isn't used in this function
 
@@ -461,7 +466,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
   if ( events & SBP_START_DEVICE_EVT )
   {
-    // Start the Device
+    // Start the Device   这个是设备有状态变化才会调用的回调函数
     VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
 
     // Start Bond Manager
@@ -472,7 +477,8 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
     return ( events ^ SBP_START_DEVICE_EVT );
   }
-
+  
+  //紧接着，处理上个if 发起的事件 SBP_PERIODIC_EVT 
   if ( events & SBP_PERIODIC_EVT )
   {
     // Restart timer
@@ -481,7 +487,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
       osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     }
 
-    // Perform periodic application task
+    // Perform periodic application task  例子测试玩的函数，5s 执行一次，characteristic3 的值拷贝到characteristic4 中
     performPeriodicTask();
 
     return (events ^ SBP_PERIODIC_EVT);
