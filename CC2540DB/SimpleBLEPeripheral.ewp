@@ -8578,6 +8578,12 @@
       <name>$PROJ_DIR$\..\Source\OSAL_SimpleBLEPeripheral.c</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\..\Source\pwm.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\pwm.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\..\Source\simpleBLEPeripheral.c</name>
     </file>
     <file>

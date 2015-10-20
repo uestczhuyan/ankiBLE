@@ -35,5 +35,9 @@
 *.dep
 *.pbd.brows
 
+
 #settings files
 settings/
+Exe/
+List/
+Obj/
