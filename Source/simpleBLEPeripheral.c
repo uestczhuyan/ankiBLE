@@ -75,6 +75,8 @@
   #include "oad_target.h"
 #endif
 
+#include "pwm.h"
+
 /*********************************************************************
  * MACROS
  */
@@ -84,7 +86,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   5000
+#define SBP_PERIODIC_EVT_PERIOD                   8
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
@@ -216,6 +218,7 @@ static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "Simple BLE Peripheral";
 static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void performPeriodicTask( void );
+static void performLEDTask( void );
 static void simpleProfileChangeCB( uint8 paramID );
 
 #if defined( CC2540_MINIDK )
@@ -251,6 +254,9 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
 {
   simpleProfileChangeCB    // Charactersitic value change callback
 };
+
+uint8 count=1,updown=1;
+
 /*********************************************************************
  * PUBLIC FUNCTIONS
  */
@@ -473,6 +479,11 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     VOID GAPBondMgr_Register( &simpleBLEPeripheral_BondMgrCBs );
 
     // Set timer for first periodic event
+    //init LED
+    PWM_init();
+    pwmPulse(1,1,1);
+    count=1;
+    updown=1;
     osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
 
     return ( events ^ SBP_START_DEVICE_EVT );
@@ -488,7 +499,10 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     }
 
     // Perform periodic application task  例子测试玩的函数，5s 执行一次，characteristic3 的值拷贝到characteristic4 中
-    performPeriodicTask();
+    //performPeriodicTask();
+    
+    //改成LED 控制
+    performLEDTask();
 
     return (events ^ SBP_PERIODIC_EVT);
   }
@@ -752,6 +766,33 @@ static void performPeriodicTask( void )
      */
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
   }
+}
+
+static void performLEDTask( void )
+{
+   if(updown)
+      count++;
+    else
+      count--;
+    if(count >=250)
+      updown=0;
+    if(count <= 100)
+      updown=1;
+     
+     //DelayMS(5);
+     /*if(count < 100){
+      DelayMS(5);
+    }else if(count < 150){
+      
+      DelayMS(6);
+    }else{
+      DelayMS(13);
+    }*/
+    
+     
+    //设置占空比
+    //count = 250;
+    setRGB(count,count,count);
 }
 
 /*********************************************************************

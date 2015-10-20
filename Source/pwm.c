@@ -20,7 +20,7 @@ void PWM_init()
   PERCFG |= 0x40;             // Move USART1&2 to alternate2 location so that T1 is visible
 
   // Initialize Timer 1
-  T1CTL = 0x0C;               // Div = 128, CLR, MODE = Suspended          
+  T1CTL = 0x0E;               // Div = 128, CLR, MODE = Suspended          
   T1CCTL1 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
   T1CCTL2 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
   T1CCTL3 = 0x0C;             // IM = 0, CMP = Clear output on compare; Mode = Compare
@@ -28,14 +28,8 @@ void PWM_init()
 
   T1CCTL0 = 0x4C;           
   T1CC0H = 0x01;             
-  T1CC0L = 0x77;            
-          
-  T1CC1H = 0x01;             
-  T1CC1L = 0x77;
-  T1CC2H = 0x01;              
-  T1CC2L = 0x77;
-  T1CC3H = 0x01;              
-  T1CC3L = 0x77;  
+  T1CC0L = 0x00;            
+            
 
   EA=1;
   IEN1 |= 0x02;               // Enable T1 cpu interrupt
@@ -59,11 +53,11 @@ void pwmPulse(int16 red, int16 green, int16 blue)
   // Set up the timer registers
 
   T1CC1L = (uint8)r;
-  T1CC1H = (uint8)(r >> 8);
+  T1CC1H = (uint8)0x0;
   T1CC2L = (uint8)g;
-  T1CC2H = (uint8)(g >> 8);
+  T1CC2H = (uint8)0x0;
   T1CC3L = (uint8)b;
-  T1CC3H = (uint8)(b >> 8);
+  T1CC3H = (uint8)0x0;
 
   // Reset timer
   T1CNTL = 0;
