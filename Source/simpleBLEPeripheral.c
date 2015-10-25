@@ -774,9 +774,9 @@ static void performLEDTask( void )
       count++;
     else
       count--;
-    if(count >=250)
+    if(count >=180)
       updown=0;
-    if(count <= 100)
+    if(count <= 30)
       updown=1;
      
      //DelayMS(5);
