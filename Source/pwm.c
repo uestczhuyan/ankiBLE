@@ -10,33 +10,78 @@ int16 gRed;
 int16 gGreen;
 int16 gBlue;
 
-void PWM_init()
-{
-  //设置pwm端口为输出
-  P1DIR|= BV(0)|BV(1);
-  //设置pwm端口为外设端口，非gpio
-  P1SEL|= BV(0)|BV(1);
-  //由于uart等会占用我们当前使用的pwm端口，因此需要将uart等重映射到别的端口去。
-  PERCFG |= 0x40;             // Move USART1&2 to alternate2 location so that T1 is visible
-
+void Timer1_init(){
   // Initialize Timer 1
   T1CTL = 0x0E;               // Div = 128, CLR, MODE = Suspended          
   T1CCTL1 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
   T1CCTL2 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
   T1CCTL3 = 0x0C;             // IM = 0, CMP = Clear output on compare; Mode = Compare
+  T1CCTL4 = 0x0C;
   T1CNTL = 0;                 // Reset timer to 0;
 
   T1CCTL0 = 0x4C;           
   T1CC0H = 0x01;             
-  T1CC0L = 0x00;            
-            
-
-  EA=1;
+  T1CC0L = 0x00;
+  
+  
   IEN1 |= 0x02;               // Enable T1 cpu interrupt
+}
+
+void Timer4_init(){
+  // Initialize Timer4
+  T4CTL = 0xFC;               // Div = 128, CLR, MODE = Suspended          
+  T4CCTL1 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
+  T4CCTL0 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
+  //T4CNTL = 0;                 // Reset timer to 0;
+  
+  IEN1 |= 0x10;               // Enable T4 cpu interrupt
+}
+
+void PWM_init()
+{
+  //T1 备用1 位置  占用P1的0、1端口，   占用P0的 6、7端口
+  P1DIR|= 0x03;
+  P1SEL|= 0x03;
+  P0DIR|= 0xC0;
+  P0SEL|= 0xC0;
+  
+  PERCFG |= 0x40; //U0,U1 都在备用0 位置   T1 在备用1位置
+  
+  Timer1_init();
+  
+  //Timer4_init();
+  
+  EA=1;
+  
 }
 
 
 void pwmPulse(int16 red, int16 green, int16 blue)
+{
+  int16 r,g,b;
+  
+  r=red;
+  g=green;
+  b=blue;
+
+  T1CC1L = (uint8)r;
+  T1CC1H = (uint8)0x0;
+  T1CC2L = (uint8)g;
+  T1CC2H = (uint8)0x0;
+  T1CC3L = (uint8)b;
+  T1CC3H = (uint8)0x0;
+  T1CC4L = (uint8)r;
+  T1CC4H = (uint8)0x0;
+  // Reset timer
+  T1CNTL = 0;
+  
+
+  // Start timer in modulo mode.
+  T1CTL |= 0x02; 
+  
+}
+
+void pwmPulse4(int16 red, int16 green, int16 blue)
 {
   int16 r,g,b;
   // stop,注意，不能加这句，加了周期偏差十几倍，具体原因未查明
@@ -52,22 +97,14 @@ void pwmPulse(int16 red, int16 green, int16 blue)
 #endif
   // Set up the timer registers
 
-  T1CC1L = (uint8)r;
-  T1CC1H = (uint8)0x0;
-  T1CC2L = (uint8)g;
-  T1CC2H = (uint8)0x0;
-  T1CC3L = (uint8)b;
-  T1CC3H = (uint8)0x0;
+  T4CC0 = (uint8)r;
+
+  T4CC1 = (uint8)g;
 
   // Reset timer
-  T1CNTL = 0;
-  
-
-  // Start timer in modulo mode.
-  T1CTL |= 0x02; 
+  //T4CNTL = 0;
   
 }
-
 void setRGB(int16 red, int16 green, int16 blue)
 {
   gRed=red;
@@ -86,3 +123,15 @@ __interrupt void pwmISR (void) {
     }
     T1STAT = ~ flags;
 }
+//#pragma register_bank=2
+/*#pragma vector = T4_VECTOR
+__interrupt void pwmISR4 (void) {
+    uint8 flags = IRCON;
+    // T1 ch 0
+    if (flags & 0x10){          
+      pwmPulse4(gRed,gGreen,gBlue);
+     
+    }
+    IRCON &=0xef;
+}
+*/
