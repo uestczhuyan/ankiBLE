@@ -10,12 +10,10 @@
 /****************************************************************************
 常用宏定义
 ****************************************************************************/
-#define BV(x) (1<<(x))
 
 
 void PWM_init();
-void setRGB(int16 red, int16 green, int16 blue);
-void pwmPulse(int16 red, int16 green, int16 blue);
+void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, int16 LED2_green, int16 LED2_blue);
 
 //持续闪烁
 //void startBlink(

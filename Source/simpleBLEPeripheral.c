@@ -217,7 +217,7 @@ static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "Simple BLE Peripheral";
  */
 static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
-static void performPeriodicTask( void );
+//static void performPeriodicTask( void );
 static void performLEDTask( void );
 static void simpleProfileChangeCB( uint8 paramID );
 
@@ -481,7 +481,6 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Set timer for first periodic event
     //init LED
     PWM_init();
-    pwmPulse(1,1,1);
     count=1;
     updown=1;
     osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
@@ -748,7 +747,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  *
  * @return  none
  */
-static void performPeriodicTask( void )
+
+/*static void performPeriodicTask( void )
 {
   uint8 valueToCopy;
   uint8 stat;
@@ -758,15 +758,13 @@ static void performPeriodicTask( void )
 
   if( stat == SUCCESS )
   {
-    /*
-     * Call to set that value of the fourth characteristic in the profile. Note
-     * that if notifications of the fourth characteristic have been enabled by
-     * a GATT client device, then a notification will be sent every time this
-     * function is called.
-     */
+     // Call to set that value of the fourth characteristic in the profile. Note
+     // that if notifications of the fourth characteristic have been enabled by
+     // a GATT client device, then a notification will be sent every time this
+     // function is called.
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
   }
-}
+}*/
 
 static void performLEDTask( void )
 {
@@ -792,7 +790,7 @@ static void performLEDTask( void )
      
     //…Ë÷√’ºø’±»
     //count = 250;
-    setRGB(count,count,count);
+    setRGB(count,count,count,count,count,count);
 }
 
 /*********************************************************************

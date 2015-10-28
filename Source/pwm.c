@@ -7,9 +7,13 @@
 //P0.1
 #define LED1 P1_0 
 
-int16 gRed;
-int16 gGreen;
-int16 gBlue;
+int16 LED1_Red;
+int16 LED1_Green;
+int16 LED1_Blue;
+
+int16 LED2_Red;
+int16 LED2_Green;
+int16 LED2_Blue;
 
 void Timer1_init(){
   //T1 备用1 位置  占用P1的0、1端口，   占用P0的 6、7端口
@@ -36,15 +40,6 @@ void Timer1_init(){
   IEN1 |= 0x02;               // Enable T1 cpu interrupt
 }
 
-void Timer4_init(){
-  // Initialize Timer4
-  T4CTL = 0xFC;               // Div = 128, CLR, MODE = Suspended          
-  T4CCTL1 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
-  T4CCTL0 = 0x0C;             // IM = 0; CMP = Clear output on compare; Mode = Compare
-  //T4CNTL = 0;                 // Reset timer to 0;
-  
-  IEN1 |= 0x10;               // Enable T4 cpu interrupt
-}
 
 void Timer3_init(){
    //T3 备用1 位置  占用P1的0、1端口，   占用P0的 6、7端口
@@ -78,21 +73,22 @@ void PWM_init()
 }
 
 
-void pwmPulse(int16 red, int16 green, int16 blue)
+void pwmPulse(int16 l1red, int16 l1green, int16 l1blue,int16 l2red)
 {
-  int16 r,g,b;
+  int16 l1r,l1g,l1b,l2r;
   
-  r=red;
-  g=green;
-  b=blue;
-
-  T1CC1L = (uint8)r;
+  l1r=l1red;
+  l1g=l1green;
+  l1b=l1blue;
+  l2r = l2red;
+  
+  T1CC1L = (uint8)l1r;
   T1CC1H = (uint8)0x0;
-  T1CC2L = (uint8)g;
+  T1CC2L = (uint8)l1g;
   T1CC2H = (uint8)0x0;
-  T1CC3L = (uint8)b;
+  T1CC3L = (uint8)l1b;
   T1CC3H = (uint8)0x0;
-  T1CC4L = (uint8)r;
+  T1CC4L = (uint8)l2r;
   T1CC4H = (uint8)0x0;
   // Reset timer
   T1CNTL = 0;
@@ -103,41 +99,29 @@ void pwmPulse(int16 red, int16 green, int16 blue)
   
 }
 
-void pwmPulse4(int16 red, int16 green, int16 blue)
+void pwmPulse3(int16 green, int16 blue)
 {
-  int16 r,g,b;
-  r=red;
-  g=green;
-  b=blue;
-  // Set up the timer registers
-
-  T4CC0 = (uint8)r;
-
-  T4CC1 = (uint8)g;
-
-  // Reset timer
-  //T4CNTL = 0;
-}
-void pwmPulse3(int16 red, int16 green, int16 blue)
-{
-  int16 r,g,b;
-  r=red;
+  int16 g,b;
   g=green;
   b=blue;
   // Set up the timer registers
   
 
-  T3CC0 = (uint8)r;
-
-  T3CC1 = (uint8)r;
+  T3CC0 = (uint8)g;
+  T3CC1 = (uint8)b;
   // Reset timer
   //T4CNTL = 0;
 }
-void setRGB(int16 red, int16 green, int16 blue)
+
+void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, int16 LED2_green, int16 LED2_blue)
 {
-  gRed=red;
-  gGreen=green;
-  gBlue=blue;
+  LED1_Red=LED1_red;
+  LED1_Green=LED1_green;
+  LED1_Blue=LED1_blue;
+  
+  LED2_Red=LED2_red;
+  LED2_Green=LED2_green;
+  LED2_Blue=LED2_blue; 
 }
 
 //#pragma register_bank=2
@@ -146,25 +130,13 @@ __interrupt void pwmISR (void) {
     uint8 flags = T1STAT;
     // T1 ch 0
     if (flags & 0x01){          
-      pwmPulse(gRed,gGreen,gBlue);
+      pwmPulse(LED1_Red,LED1_Green,LED1_Blue,LED2_Red);
      
     }
     T1STAT = ~ flags;
 }
 #pragma vector = T3_VECTOR
 __interrupt void pwmISR3 (void) {
-  pwmPulse3(gRed,gGreen,gBlue);
-  //T3CNT = 0;
+  pwmPulse3(LED2_Green,LED2_Blue);
 }
-//#pragma register_bank=2
-/*#pragma vector = T4_VECTOR
-__interrupt void pwmISR4 (void) {
-    uint8 flags = IRCON;
-    // T1 ch 0
-    if (flags & 0x10){          
-      pwmPulse4(gRed,gGreen,gBlue);
-     
-    }
-    IRCON &=0xef;
-}
-*/
+
