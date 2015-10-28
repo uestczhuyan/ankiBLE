@@ -126,6 +126,9 @@
 // Length of bd addr as a string
 #define B_ADDR_STR_LEN                        15
 
+//RSSI的获取速率
+#define RSSI_RATE                             100;
+
 /*********************************************************************
  * TYPEDEFS
  */
@@ -217,6 +220,7 @@ static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "Simple BLE Peripheral";
  */
 static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
+static void rssiRead(int8 newRSSI);
 //static void performPeriodicTask( void );
 static void performLEDTask( void );
 static void simpleProfileChangeCB( uint8 paramID );
@@ -239,7 +243,7 @@ static char *bdAddr2Str ( uint8 *pAddr );
 static gapRolesCBs_t simpleBLEPeripheral_PeripheralCBs =
 {
   peripheralStateNotificationCB,  // Profile State Change Callbacks
-  NULL                            // When a valid RSSI is read from controller (not used by application)
+  rssiRead                            // When a valid RSSI is read from controller (not used by application)
 };
 
 // GAP Bond Manager Callbacks
@@ -315,10 +319,13 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPRole_SetParameter( GAPROLE_MAX_CONN_INTERVAL, sizeof( uint16 ), &desired_max_interval );
     GAPRole_SetParameter( GAPROLE_SLAVE_LATENCY, sizeof( uint16 ), &desired_slave_latency );
     GAPRole_SetParameter( GAPROLE_TIMEOUT_MULTIPLIER, sizeof( uint16 ), &desired_conn_timeout );
+    
+    //设置RSSI 获取速率
+    GAPRole_SetParameter(GAPROLE_RSSI_READ_RATE,sizeof(uint16),&desired_rssi_rate);
   }
 
   // Set the GAP Characteristics
-  GGS_SetParameter( GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, attDeviceName );
+  GGS_SetParameter( GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, RSSI_RATE );
 
   // Set advertising interval
   {
@@ -732,6 +739,18 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
 
 }
+
+/**
+*
+* 获取RSSI值
+*
+*/
+static void rssiRead( int8 newRSSI )
+{
+  //进行相关处理
+  
+}
+
 
 /*********************************************************************
  * @fn      performPeriodicTask
