@@ -321,11 +321,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPRole_SetParameter( GAPROLE_TIMEOUT_MULTIPLIER, sizeof( uint16 ), &desired_conn_timeout );
     
     //设置RSSI 获取速率
-    GAPRole_SetParameter(GAPROLE_RSSI_READ_RATE,sizeof(uint16),&desired_rssi_rate);
+    uint16 rssi_rate = RSSI_RATE;
+    GAPRole_SetParameter(GAPROLE_RSSI_READ_RATE,sizeof(uint16),&rssi_rate);
   }
 
   // Set the GAP Characteristics
-  GGS_SetParameter( GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, RSSI_RATE );
+  GGS_SetParameter( GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, attDeviceName );
 
   // Set advertising interval
   {
