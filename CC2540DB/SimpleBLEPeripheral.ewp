@@ -8912,10 +8912,10 @@
       </excluded>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\Profiles\SimpleProfile\simpleGATTprofile.c</name>
+      <name>$PROJ_DIR$\..\Source\Profiles\simpleGATTprofile.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\Profiles\SimpleProfile\simpleGATTprofile.h</name>
+      <name>$PROJ_DIR$\..\Source\Profiles\simpleGATTprofile.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\Profiles\Keys\simplekeys.c</name>
