@@ -5,15 +5,17 @@
 //pwm pins:
 //P0.0
 //P0.1
-#define LED1 P1_0 
+#define LED1 P1_0
 
-int16 LED1_Red;
-int16 LED1_Green;
-int16 LED1_Blue;
+#define INIT_RGB 70
 
-int16 LED2_Red;
-int16 LED2_Green;
-int16 LED2_Blue;
+int16 LED1_Red = INIT_RGB;
+int16 LED1_Green = INIT_RGB;
+int16 LED1_Blue = INIT_RGB;
+
+int16 LED2_Red = INIT_RGB;
+int16 LED2_Green = INIT_RGB;
+int16 LED2_Blue = INIT_RGB;
 
 void Timer1_init(){
   //T1 备用1 位置  占用P1的0、1端口，   占用P0的 6、7端口
@@ -34,8 +36,7 @@ void Timer1_init(){
 
   T1CCTL0 = 0x4C;           
   T1CC0H = 0x01;             
-  T1CC0L = 0x00;
-  
+  T1CC0L = 0x00; 
   
   IEN1 |= 0x02;               // Enable T1 cpu interrupt
 }
@@ -65,7 +66,7 @@ void PWM_init()
   
   Timer1_init();
   
-  Timer3_init();
+  //Timer3_init();
   
   //Timer4_init();
   
@@ -140,3 +141,31 @@ __interrupt void pwmISR3 (void) {
   pwmPulse3(LED2_Green,LED2_Blue);
 }
 
+
+static void performLEDTaskKKKK( void )
+{
+   /*if(updown)
+      count++;
+    else
+      count--;
+    if(count >=180)
+      updown=0;
+    if(count <= 30)
+      updown=1;
+    */
+     
+     //DelayMS(5);
+     /*if(count < 100){
+      DelayMS(5);
+    }else if(count < 150){
+      
+      DelayMS(6);
+    }else{
+      DelayMS(13);
+    }*/
+    
+     
+    //设置占空比
+    //count = 250;
+    //setRGB(count,count,count,count,count,count);
+}

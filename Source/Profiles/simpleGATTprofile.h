@@ -79,13 +79,11 @@ extern "C"
 /*ghostyu*/
 /*将此红定义移到iar option preproffessor中*/
 //#define HAL_UART_TRANS TRUE
-#ifdef HAL_UART_TRANS
 /*
 char1一次能够通信的字符串的最大长度
 我们的串口透传程序在char1基础上行修改
 */
 #define SIMPLEPROFILE_CHAR1_LEN           20 
-#endif
 
 /*********************************************************************
  * TYPEDEFS

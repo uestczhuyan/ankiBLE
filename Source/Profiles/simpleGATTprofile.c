@@ -130,11 +130,9 @@ static CONST gattAttrType_t simpleProfileService = { ATT_BT_UUID_SIZE, simplePro
 static uint8 simpleProfileChar1Props = GATT_PROP_READ | GATT_PROP_WRITE;
 
 // Characteristic 1 Value
-#ifdef HAL_UART_TRANS
+
 static uint8 simpleProfileChar1[SIMPLEPROFILE_CHAR1_LEN] = {0};
-#else
-static uint8 simpleProfileChar1 = 0;
-#endif
+
 
 // Simple Profile Characteristic 1 User Description
 static uint8 simpleProfileChar1UserDesp[17] = "Characteristic 1\0";
@@ -213,11 +211,7 @@ static gattAttribute_t simpleProfileAttrTbl[SERVAPP_NUM_ATTR_SUPPORTED] =
         { ATT_BT_UUID_SIZE, simpleProfilechar1UUID },
         GATT_PERMIT_READ | GATT_PERMIT_WRITE, 
         0, 
-#ifdef HAL_UART_TRANS
         simpleProfileChar1
-#else
-        &simpleProfileChar1 
-#endif
       },
 
       // Characteristic 1 User Description
@@ -440,18 +434,10 @@ bStatus_t SimpleProfile_SetParameter( uint8 param, uint8 len, void *value )
   switch ( param )
   {
     case SIMPLEPROFILE_CHAR1:
-#ifdef HAL_UART_TRANS
       if ( len == SIMPLEPROFILE_CHAR5_LEN ) 
       {
           VOID osal_memcpy( simpleProfileChar1, value, SIMPLEPROFILE_CHAR1_LEN );
       }
-#else
-	  if ( len == sizeof ( uint8 ) ) 
-	  {
-
-        simpleProfileChar1 = *((uint8*)value);
-      }
-#endif
       else
       {
         ret = bleInvalidRange;
@@ -534,11 +520,7 @@ bStatus_t SimpleProfile_GetParameter( uint8 param, void *value )
   switch ( param )
   {
     case SIMPLEPROFILE_CHAR1:
-#ifdef HAL_UART_TRANS
 	   VOID osal_memcpy( value, simpleProfileChar1, SIMPLEPROFILE_CHAR1_LEN );  //simpleProfileChar1 是数组名
-#else
-       *((uint8*)value) = simpleProfileChar1;	//simpleProfileChar1 是变量
-#endif
       break;
 
     case SIMPLEPROFILE_CHAR2:
@@ -655,7 +637,6 @@ static uint8 simpleProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr
  *
  * @return  Success or Failure
  */
-#ifdef HAL_UART_TRANS
 static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
                                  uint8 *pValue, uint8 len, uint16 offset )
 
@@ -758,87 +739,6 @@ static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *
   return ( status );
 }
 
-#else
-static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
-                                 uint8 *pValue, uint8 len, uint16 offset )
-{
-  bStatus_t status = SUCCESS;
-  uint8 notifyApp = 0xFF;
-  
-  // If attribute permissions require authorization to write, return error
-  if ( gattPermitAuthorWrite( pAttr->permissions ) )
-  {
-    // Insufficient authorization
-    return ( ATT_ERR_INSUFFICIENT_AUTHOR );
-  }
-  
-  if ( pAttr->type.len == ATT_BT_UUID_SIZE )
-  {
-    // 16-bit UUID
-    uint16 uuid = BUILD_UINT16( pAttr->type.uuid[0], pAttr->type.uuid[1]);
-    switch ( uuid )
-    {
-      case SIMPLEPROFILE_CHAR1_UUID:
-      case SIMPLEPROFILE_CHAR3_UUID:
-
-        //Validate the value
-        // Make sure it's not a blob oper
-        if ( offset == 0 )
-        {
-          if ( len != 1 )
-          {
-            status = ATT_ERR_INVALID_VALUE_SIZE;
-          }
-        }
-        else
-        {
-          status = ATT_ERR_ATTR_NOT_LONG;
-        }
-        
-        //Write the value
-        if ( status == SUCCESS )
-        {
-          uint8 *pCurValue = (uint8 *)pAttr->pValue;        
-          *pCurValue = pValue[0];
-
-          if( pAttr->pValue == &simpleProfileChar1 )
-          {
-            notifyApp = SIMPLEPROFILE_CHAR1;        
-          }
-          else
-          {
-            notifyApp = SIMPLEPROFILE_CHAR3;           
-          }
-        }
-             
-        break;
-
-      case GATT_CLIENT_CHAR_CFG_UUID:
-        status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len,
-                                                 offset, GATT_CLIENT_CFG_NOTIFY );
-        break;
-        
-      default:
-        // Should never get here! (characteristics 2 and 4 do not have write permissions)
-        status = ATT_ERR_ATTR_NOT_FOUND;
-        break;
-    }
-  }
-  else
-  {
-    // 128-bit UUID
-    status = ATT_ERR_INVALID_HANDLE;
-  }
-
-  // If a charactersitic value changed then callback function to notify application of change
-  if ( (notifyApp != 0xFF ) && simpleProfile_AppCBs && simpleProfile_AppCBs->pfnSimpleProfileChange )
-  {
-    simpleProfile_AppCBs->pfnSimpleProfileChange( notifyApp );  
-  }
-  
-  return ( status );
-}
-#endif
 
 /*********************************************************************
  * @fn          simpleProfile_HandleConnStatusCB

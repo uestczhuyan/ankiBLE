@@ -86,7 +86,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   8
+#define SBP_PERIODIC_EVT_PERIOD                   30
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
@@ -127,7 +127,8 @@
 #define B_ADDR_STR_LEN                        15
 
 //RSSI的获取速率
-#define RSSI_RATE                             100;
+#define RSSI_RATE                             50;
+
 
 /*********************************************************************
  * TYPEDEFS
@@ -234,7 +235,6 @@ static char *bdAddr2Str ( uint8 *pAddr );
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
 
-
 /*********************************************************************
  * PROFILE CALLBACKS
  */
@@ -258,8 +258,6 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
 {
   simpleProfileChangeCB    // Charactersitic value change callback
 };
-
-uint8 count=1,updown=1;
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -489,8 +487,6 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Set timer for first periodic event
     //init LED
     PWM_init();
-    count=1;
-    updown=1;
     osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
 
     return ( events ^ SBP_START_DEVICE_EVT );
@@ -746,10 +742,12 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 * 获取RSSI值
 *
 */
+//static uint16 countRSSI = 0;
 static void rssiRead( int8 newRSSI )
 {
   //进行相关处理
-  
+  //countRSSI++;
+  HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
 }
 
 
@@ -785,7 +783,7 @@ static void rssiRead( int8 newRSSI )
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
   }
 }*/
-
+static uint8 updown =0,count=0;
 static void performLEDTask( void )
 {
    if(updown)
@@ -825,16 +823,18 @@ static void performLEDTask( void )
 static void simpleProfileChangeCB( uint8 paramID )
 {
   uint8 newValue;
-
+  uint8 newValueBuf[20]={0};
   switch( paramID )
   {
     case SIMPLEPROFILE_CHAR1:
-      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
-
+      
+      //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
+      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
+      setRGB((uint16)newValueBuf[0],(uint16)newValueBuf[1],(uint16)newValueBuf[2],(uint16)newValueBuf[3],(uint16)newValueBuf[4],(uint16)newValueBuf[5]);
       #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-        HalLcdWriteStringValue( "Char 1:", (uint16)(newValue), 10,  HAL_LCD_LINE_3 );
+        //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
+        HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[0], 10,  HAL_LCD_LINE_5 );
       #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-
       break;
 
     case SIMPLEPROFILE_CHAR3:
