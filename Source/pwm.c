@@ -7,7 +7,7 @@
 //P0.1
 #define LED1 P1_0
 
-#define INIT_RGB 70
+#define INIT_RGB 30
 
 int16 LED1_Red = INIT_RGB;
 int16 LED1_Green = INIT_RGB;

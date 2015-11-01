@@ -427,7 +427,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   // Enable clock divide on halt
   // This reduces active current while radio is active and CC254x MCU
   // is halted
-  HCI_EXT_ClkDivOnHaltCmd( HCI_EXT_ENABLE_CLK_DIVIDE_ON_HALT );
+  //不删除  PWM不稳定
+  //HCI_EXT_ClkDivOnHaltCmd( HCI_EXT_ENABLE_CLK_DIVIDE_ON_HALT );
 
 #if defined ( DC_DC_P0_7 )
 
@@ -505,7 +506,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //performPeriodicTask();
     
     //改成LED 控制
-    performLEDTask();
+    //performLEDTask();
 
     return (events ^ SBP_PERIODIC_EVT);
   }
@@ -792,7 +793,7 @@ static void performLEDTask( void )
       count--;
     if(count >=180)
       updown=0;
-    if(count <= 30)
+    if(count <= 10)
       updown=1;
      
      //DelayMS(5);
@@ -830,7 +831,8 @@ static void simpleProfileChangeCB( uint8 paramID )
       
       //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
-      setRGB((uint16)newValueBuf[0],(uint16)newValueBuf[1],(uint16)newValueBuf[2],(uint16)newValueBuf[3],(uint16)newValueBuf[4],(uint16)newValueBuf[5]);
+      setRGB((uint16)newValueBuf[0],(uint16)newValueBuf[1],(uint16)newValueBuf[2],
+                  (uint16)newValueBuf[3],(uint16)newValueBuf[4],(uint16)newValueBuf[5]);
       #if (defined HAL_LCD) && (HAL_LCD == TRUE)
         //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
         HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[0], 10,  HAL_LCD_LINE_5 );
