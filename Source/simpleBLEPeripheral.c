@@ -85,9 +85,6 @@
  * CONSTANTS
  */
 
-// How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   30
-
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
 
@@ -146,10 +143,7 @@
  * EXTERNAL FUNCTIONS
  */
 
-/*********************************************************************
- * LOCAL VARIABLES
- */
-static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
+
 
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
 
@@ -223,7 +217,7 @@ static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void rssiRead(int8 newRSSI);
 //static void performPeriodicTask( void );
-static void performLEDTask( void );
+//static void performLEDTask( void );
 static void simpleProfileChangeCB( uint8 paramID );
 
 #if defined( CC2540_MINIDK )
@@ -258,6 +252,9 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
 {
   simpleProfileChangeCB    // Charactersitic value change callback
 };
+
+//手机的状态
+static int8 PHONE_STATUS = 0;
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -488,26 +485,16 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Set timer for first periodic event
     //init LED
     PWM_init();
-    osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
-
+    //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+    //LedChange();
     return ( events ^ SBP_START_DEVICE_EVT );
   }
   
-  //紧接着，处理上个if 发起的事件 SBP_PERIODIC_EVT 
-  if ( events & SBP_PERIODIC_EVT )
+ if ( events & SBP_PERIODIC_EVT )
   {
-    // Restart timer
-    if ( SBP_PERIODIC_EVT_PERIOD )
-    {
-      osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
-    }
-
-    // Perform periodic application task  例子测试玩的函数，5s 执行一次，characteristic3 的值拷贝到characteristic4 中
-    //performPeriodicTask();
-    
-    //改成LED 控制
-    //performLEDTask();
-
+    //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+    //执行灯光change的函数
+    LedChange();
     return (events ^ SBP_PERIODIC_EVT);
   }
 
@@ -744,11 +731,15 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 *
 */
 //static uint16 countRSSI = 0;
+static int8 lastRSSI = 0;
 static void rssiRead( int8 newRSSI )
 {
   //进行相关处理
-  //countRSSI++;
-  HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+  if(lastRSSI != newRSSI){
+    lastRSSI = newRSSI;
+    HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+  }
+  
 }
 
 
@@ -784,33 +775,7 @@ static void rssiRead( int8 newRSSI )
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
   }
 }*/
-static uint8 updown =0,count=0;
-static void performLEDTask( void )
-{
-   if(updown)
-      count++;
-    else
-      count--;
-    if(count >=180)
-      updown=0;
-    if(count <= 10)
-      updown=1;
-     
-     //DelayMS(5);
-     /*if(count < 100){
-      DelayMS(5);
-    }else if(count < 150){
-      
-      DelayMS(6);
-    }else{
-      DelayMS(13);
-    }*/
-    
-     
-    //设置占空比
-    //count = 250;
-    setRGB(count,count,count,count,count,count);
-}
+
 
 /*********************************************************************
  * @fn      simpleProfileChangeCB
@@ -831,12 +796,19 @@ static void simpleProfileChangeCB( uint8 paramID )
       
       //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
-      setRGB((uint16)newValueBuf[0],(uint16)newValueBuf[1],(uint16)newValueBuf[2],
-                  (uint16)newValueBuf[3],(uint16)newValueBuf[4],(uint16)newValueBuf[5]);
+      /*
       #if (defined HAL_LCD) && (HAL_LCD == TRUE)
         //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
-        HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[0], 10,  HAL_LCD_LINE_5 );
+        HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[6], 10,  HAL_LCD_LINE_5 );
+         HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[4], 10,  HAL_LCD_LINE_6 );
+          HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[5], 10,  HAL_LCD_LINE_7 );
       #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+      */
+      
+      //newValueBuf[0] = 1;
+      setValus(newValueBuf);
+      LedChange();
+    
       break;
 
     case SIMPLEPROFILE_CHAR3:
@@ -852,6 +824,10 @@ static void simpleProfileChangeCB( uint8 paramID )
       // should not reach here!
       break;
   }
+}
+
+void setLED_EVT(){
+  osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
 }
 
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)

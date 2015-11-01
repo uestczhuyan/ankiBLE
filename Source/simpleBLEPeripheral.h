@@ -56,11 +56,19 @@ extern "C"
 
 // Simple BLE Peripheral Task Events
 #define SBP_START_DEVICE_EVT                              0x0001
+// LED 相关事件
 #define SBP_PERIODIC_EVT                                  0x0002
+ 
+//LED change interval , 50fps
+#define SBP_PERIODIC_EVT_PERIOD                   40 
 
 /*********************************************************************
  * MACROS
  */
+ /*********************************************************************
+ * LOCAL VARIABLES
+ */
+static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
 
 /*********************************************************************
  * FUNCTIONS
@@ -75,6 +83,8 @@ extern void SimpleBLEPeripheral_Init( uint8 task_id );
  * Task Event Processor for the BLE Application
  */
 extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
+   
+void setLED_EVT();
 
 /*********************************************************************
 *********************************************************************/

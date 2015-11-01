@@ -1,13 +1,24 @@
 #include <ioCC2540.h>
 #include "pwm.h"
+#include "simpleBLEPeripheral.h"
+#include "OSAL.h"
 
 
-//pwm pins:
-//P0.0
-//P0.1
-#define LED1 P1_0
+#define INIT_RGB 1
 
-#define INIT_RGB 30
+#define RGB_MAX 100
+
+#define STATUS_POWER_LOW 1
+#define STATUS_POWER_CHARGING 2
+#define STATUS_POWER_HIGH 4     
+#define STATUS_HAS_MSG 8      
+
+int16 MAX_R = RGB_MAX;
+int16 MAX_G = RGB_MAX;
+int16 MAX_B = RGB_MAX;
+uint8 STATUS = 0;
+
+int8 updown = 1,count = 0;
 
 int16 LED1_Red = INIT_RGB;
 int16 LED1_Green = INIT_RGB;
@@ -38,6 +49,15 @@ void Timer1_init(){
   T1CC0H = 0x01;             
   T1CC0L = 0x00; 
   
+  T1CC1L = (uint8)LED1_Red;
+  T1CC1H = (uint8)0x0;
+  T1CC2L = (uint8)LED1_Green;
+  T1CC2H = (uint8)0x0;
+  T1CC3L = (uint8)LED1_Blue;
+  T1CC3H = (uint8)0x0;
+  T1CC4L = (uint8)LED2_Red;
+  T1CC4H = (uint8)0x0;
+  
   IEN1 |= 0x02;               // Enable T1 cpu interrupt
 }
 
@@ -58,6 +78,9 @@ void Timer3_init(){
   
   T3CNT =0;                 // Reset timer to 0;
   
+  T3CC0 = (uint8)LED2_Green;
+  T3CC1 = (uint8)LED2_Blue;
+  
   T3IE =1;               // Enable T3 cpu interrupt
 }
 
@@ -66,7 +89,7 @@ void PWM_init()
   
   Timer1_init();
   
-  //Timer3_init();
+  Timer3_init();
   
   //Timer4_init();
   
@@ -74,14 +97,14 @@ void PWM_init()
 }
 
 
-void pwmPulse(int16 l1red, int16 l1green, int16 l1blue,int16 l2red)
-{
+void pwmPulse()
+{ 
   int16 l1r,l1g,l1b,l2r;
   
-  l1r=l1red;
-  l1g=l1green;
-  l1b=l1blue;
-  l2r = l2red;
+  l1r=LED1_Red;
+  l1g=LED1_Green;
+  l1b=LED1_Blue;
+  l2r = LED2_Red;
   
   T1CC1L = (uint8)l1r;
   T1CC1H = (uint8)0x0;
@@ -100,11 +123,11 @@ void pwmPulse(int16 l1red, int16 l1green, int16 l1blue,int16 l2red)
   
 }
 
-void pwmPulse3(int16 green, int16 blue)
+void pwmPulse3()
 {
   int16 g,b;
-  g=green;
-  b=blue;
+  g=LED2_Green;
+  b=LED2_Blue;
   // Set up the timer registers
   
 
@@ -113,6 +136,25 @@ void pwmPulse3(int16 green, int16 blue)
   // Reset timer
   //T4CNTL = 0;
 }
+
+//#pragma register_bank=2
+#pragma vector = T1_VECTOR
+__interrupt void pwmISR (void) {
+    uint8 flags = T1STAT;
+    // T1 ch 0
+    /*
+    if (flags & 0x01){          
+      pwmPulse(LED1_Red,LED1_Green,LED1_Blue,LED2_Red);
+     
+    }
+    */
+    T1STAT = ~ flags;
+}
+#pragma vector = T3_VECTOR
+__interrupt void pwmISR3 (void) {
+  //pwmPulse3(LED2_Green,LED2_Blue);
+}
+
 
 void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, int16 LED2_green, int16 LED2_blue)
 {
@@ -125,47 +167,62 @@ void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, in
   LED2_Blue=LED2_blue; 
 }
 
-//#pragma register_bank=2
-#pragma vector = T1_VECTOR
-__interrupt void pwmISR (void) {
-    uint8 flags = T1STAT;
-    // T1 ch 0
-    if (flags & 0x01){          
-      pwmPulse(LED1_Red,LED1_Green,LED1_Blue,LED2_Red);
-     
-    }
-    T1STAT = ~ flags;
-}
-#pragma vector = T3_VECTOR
-__interrupt void pwmISR3 (void) {
-  pwmPulse3(LED2_Green,LED2_Blue);
+
+void setValus(uint8 *value){
+  uint8 pos = 1;
+  if(value[0] & STATUS_POWER_LOW){
+    pos = 4;
+  }else if(value[0] & STATUS_POWER_CHARGING){
+    pos = 7;
+  }else if(value[0] & STATUS_POWER_HIGH){
+    pos = 10;
+  }else if(value[0] & STATUS_HAS_MSG){
+    pos = 13;
+  }else{
+    pos = 1; 
+  }
+  MAX_R = value[pos];
+  MAX_G = value[pos+1];
+  MAX_B = value[pos+2];
+  STATUS = value[0];
 }
 
-
-static void performLEDTaskKKKK( void )
-{
-   /*if(updown)
-      count++;
-    else
-      count--;
-    if(count >=180)
-      updown=0;
-    if(count <= 30)
-      updown=1;
-    */
-     
-     //DelayMS(5);
-     /*if(count < 100){
-      DelayMS(5);
-    }else if(count < 150){
-      
-      DelayMS(6);
-    }else{
-      DelayMS(13);
-    }*/
+void LedChange(){
+  //如果手机再充电 那么需要设置事件进行循环驱动变化
+  if(STATUS & STATUS_POWER_LOW
+     || STATUS & STATUS_POWER_CHARGING
+     || STATUS & STATUS_POWER_HIGH){
+       
+    setLED_EVT();
     
-     
-    //设置占空比
-    //count = 250;
-    //setRGB(count,count,count,count,count,count);
+    if(updown){
+      count++;
+    }else{
+      count--;
+    }
+    
+    LED1_Red = 10 + count*MAX_R/50;
+    LED1_Green = 10 + count*MAX_G/50;
+    LED1_Blue = 10 + count*MAX_B/50;
+    LED2_Red = 10 + (50-count)*MAX_R/50;
+    LED2_Green = 10 + (50-count)*MAX_G/50;
+    LED2_Blue = 10 + (50-count)*MAX_B/50;
+    
+    if(count >= 50){
+      updown = 0;
+    }
+    if(count <= 0){
+      updown = 1;
+    }
+  }else{
+    LED1_Red = MAX_R;
+    LED1_Green = MAX_G;
+    LED1_Blue = MAX_B;
+    LED2_Red = MAX_R;
+    LED2_Green = MAX_G;
+    LED2_Blue = MAX_B;
+  }
+  
+  pwmPulse();
+  pwmPulse3();
 }
