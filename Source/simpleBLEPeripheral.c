@@ -367,15 +367,15 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
       //从文件中读取
       uint8 wirteTag = osal_snv_read(0x80,20,charValue1);
       if( wirteTag == SUCCESS){
-          HalLcdWriteStringValue("read Ok",(uint16)wirteTag,10, HAL_LCD_LINE_4 );
+          HalLcdWriteStringValue("read Ok",(uint16)wirteTag,10, HAL_LCD_LINE_6 );
       }else{
-        HalLcdWriteStringValue("read failed",(uint16)wirteTag,10, HAL_LCD_LINE_4 );
+        HalLcdWriteStringValue("read failed",(uint16)wirteTag,10, HAL_LCD_LINE_6 );
            //进行初始化
          wirteTag = osal_snv_write(0x80,20,charValue1);
          if(wirteTag == SUCCESS){
-            HalLcdWriteStringValue( "init", (uint16)wirteTag, 10,  HAL_LCD_LINE_5 );
+            HalLcdWriteStringValue( "init", (uint16)wirteTag, 10,  HAL_LCD_LINE_7 );
          }else{
-            HalLcdWriteStringValue("init failed", (uint16)wirteTag,10, HAL_LCD_LINE_5 );
+            HalLcdWriteStringValue("init failed", (uint16)wirteTag,10, HAL_LCD_LINE_7 );
          }
       }
      #else 
