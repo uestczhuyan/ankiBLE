@@ -69,6 +69,7 @@
 #include "gapbondmgr.h"
 
 #include "simpleBLEPeripheral.h"
+#include "osal_snv.h"
 
 #if defined FEATURE_OAD
   #include "oad.h"
@@ -218,6 +219,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void rssiRead(int8 newRSSI);
 //static void performPeriodicTask( void );
 //static void performLEDTask( void );
+static void dataChange(int8 phoneStatus);
 static void simpleProfileChangeCB( uint8 paramID );
 
 #if defined( CC2540_MINIDK )
@@ -252,9 +254,6 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
 {
   simpleProfileChangeCB    // Charactersitic value change callback
 };
-
-//手机的状态
-static int8 PHONE_STATUS = 0;
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -358,13 +357,36 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the SimpleProfile Characteristic Values
   {
-    uint8 charValue1 = 1;
+    uint8 charValue1[20] = {0,1,100,100,1,200,150,1,200,1,1,200,1,1,200,1,1,200,1};
     uint8 charValue2 = 2;
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
     uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = { 1, 2, 3, 4, 5 };
     
-    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, sizeof ( uint8 ), &charValue1 );
+     #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+      //从文件中读取
+      uint8 wirteTag = osal_snv_read(0x80,20,charValue1);
+      if( wirteTag == SUCCESS){
+          HalLcdWriteStringValue("read Ok",(uint16)wirteTag,10, HAL_LCD_LINE_4 );
+      }else{
+        HalLcdWriteStringValue("read failed",(uint16)wirteTag,10, HAL_LCD_LINE_4 );
+           //进行初始化
+         wirteTag = osal_snv_write(0x80,20,charValue1);
+         if(wirteTag == SUCCESS){
+            HalLcdWriteStringValue( "init", (uint16)wirteTag, 10,  HAL_LCD_LINE_5 );
+         }else{
+            HalLcdWriteStringValue("init failed", (uint16)wirteTag,10, HAL_LCD_LINE_5 );
+         }
+      }
+     #else 
+      if( osal_snv_read(0x80,20,charValue1) != SUCCESS){
+           //进行初始化
+         osal_snv_write(0x80,20,charValue1);
+      }
+     #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+    
+    
+    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, 20, &charValue1 );
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, sizeof ( uint8 ), &charValue2 );
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
     //前面3句只是对对象值的设置，这句代码 进行了，Service的characteristic设置，Process Client Characteristis Configuration Change
@@ -485,6 +507,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Set timer for first periodic event
     //init LED
     PWM_init();
+    dataChange(0);
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //LedChange();
     return ( events ^ SBP_START_DEVICE_EVT );
@@ -789,26 +812,11 @@ static void rssiRead( int8 newRSSI )
 static void simpleProfileChangeCB( uint8 paramID )
 {
   uint8 newValue;
-  uint8 newValueBuf[20]={0};
+  
   switch( paramID )
   {
     case SIMPLEPROFILE_CHAR1:
-      
-      //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
-      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
-      /*
-      #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-        //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
-        HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[6], 10,  HAL_LCD_LINE_5 );
-         HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[4], 10,  HAL_LCD_LINE_6 );
-          HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[5], 10,  HAL_LCD_LINE_7 );
-      #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-      */
-      
-      //newValueBuf[0] = 1;
-      setValus(newValueBuf);
-      LedChange();
-    
+      dataChange(-1);
       break;
 
     case SIMPLEPROFILE_CHAR3:
@@ -824,6 +832,28 @@ static void simpleProfileChangeCB( uint8 paramID )
       // should not reach here!
       break;
   }
+}
+
+static void dataChange(int8 phoneStatus){
+      uint8 newValueBuf[20]={0};
+      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
+      /*
+      #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+        //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
+        HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[6], 10,  HAL_LCD_LINE_5 );
+         HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[4], 10,  HAL_LCD_LINE_6 );
+          HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[5], 10,  HAL_LCD_LINE_7 );
+      #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+      */
+
+      //newValueBuf[0] = 1;
+      if(phoneStatus >=0){
+        //newValueBuf[0] = phoneStatus;
+      }else{
+        osal_snv_write(0x80,20,newValueBuf);
+      }
+      setValus(newValueBuf);
+      LedChange();
 }
 
 void setLED_EVT(){

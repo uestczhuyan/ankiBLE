@@ -8,6 +8,8 @@
 
 #define RGB_MAX 100
 
+#define COUNTER 100   
+
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
 #define STATUS_POWER_HIGH 4     
@@ -201,12 +203,19 @@ void LedChange(){
       count--;
     }
     
-    LED1_Red = 10 + count*MAX_R/50;
-    LED1_Green = 10 + count*MAX_G/50;
-    LED1_Blue = 10 + count*MAX_B/50;
-    LED2_Red = 10 + (50-count)*MAX_R/50;
-    LED2_Green = 10 + (50-count)*MAX_G/50;
-    LED2_Blue = 10 + (50-count)*MAX_B/50;
+    LED1_Red = 1 + count*MAX_R/COUNTER;
+    LED1_Green = 1 + count*MAX_G/COUNTER;
+    LED1_Blue = 1 + count*MAX_B/COUNTER;
+    
+    LED2_Red = 10 + (50-count)*MAX_R/COUNTER;
+    LED2_Green = 10 + (50-count)*MAX_G/COUNTER;
+    LED2_Blue = 10 + (50-count)*MAX_B/COUNTER;
+   
+    /*
+     LED2_Red = 1 + count*MAX_R/COUNTER;
+    LED2_Green = 1 + count*MAX_G/COUNTER;
+    LED2_Blue = 1 + count*MAX_B/COUNTER;
+    */
     
     if(count >= 50){
       updown = 0;
