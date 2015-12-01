@@ -125,7 +125,10 @@
 #define B_ADDR_STR_LEN                        15
 
 //RSSI的获取速率
-#define RSSI_RATE                             50;
+#define RSSI_RATE                             50
+
+
+#define HAL_RED_LINE_PIN       1
 
 
 /*********************************************************************
@@ -154,25 +157,10 @@ static uint8 scanRspData[] =
   // complete name
   0x14,   // length of this data
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  0x53,   // 'S'
-  0x69,   // 'i'
-  0x6d,   // 'm'
-  0x70,   // 'p'
-  0x6c,   // 'l'
-  0x65,   // 'e'
-  0x42,   // 'B'
-  0x4c,   // 'L'
-  0x45,   // 'E'
-  0x50,   // 'P'
-  0x65,   // 'e'
-  0x72,   // 'r'
-  0x69,   // 'i'
-  0x70,   // 'p'
-  0x68,   // 'h'
-  0x65,   // 'e'
-  0x72,   // 'r'
-  0x61,   // 'a'
-  0x6c,   // 'l'
+  0x41,   // 'A'
+  0x4e,   // 'N'
+  0x4b,   // 'K'
+  0x49,   // 'I'
 
   // connection interval range
   0x05,   // length of this data
@@ -357,7 +345,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the SimpleProfile Characteristic Values
   {
-    uint8 charValue1[20] = {0,1,100,100,1,200,150,1,200,1,1,200,1,1,200,1,1,200,1};
+    uint8 charValue1[20] = {0,1,1,250,1,1,250,1,250,1,1,250,1,1,250,1,1,250,1};
     uint8 charValue2 = 2;
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
@@ -504,10 +492,15 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Start Bond Manager
     VOID GAPBondMgr_Register( &simpleBLEPeripheral_BondMgrCBs );
 
+    //init redLine
+    P0DIR &= ~BV(HAL_RED_LINE_PIN);  //输入，外设
+    P0SEL &= ~BV(HAL_RED_LINE_PIN);
+    
     // Set timer for first periodic event
     //init LED
     PWM_init();
     dataChange(0);
+    
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //LedChange();
     return ( events ^ SBP_START_DEVICE_EVT );
@@ -517,6 +510,25 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   {
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
+    /*
+    if(P0_1 == 1){
+      for(int i = 0 ; i<255 ; i++){
+          for(int j = 0 ; j<255 ; j++){
+          }
+      }
+      if(P0_1 == 1){
+        HalLcdWriteString("HEIGH",HAL_LCD_LINE_4);
+      }
+    }else{
+      for(int i = 0 ; i<255 ; i++){
+          for(int j = 0 ; j<255 ; j++){
+          }
+      }
+      if(P0_1 != 1){
+        HalLcdWriteString("LOW",HAL_LCD_LINE_4);
+      }
+    }*/
+
     LedChange();
     return (events ^ SBP_PERIODIC_EVT);
   }
@@ -846,9 +858,9 @@ static void dataChange(int8 phoneStatus){
       #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
       */
 
-      //newValueBuf[0] = 1;
+      newValueBuf[0] = 1;
       if(phoneStatus >=0){
-        //newValueBuf[0] = phoneStatus;
+        newValueBuf[0] = 2;
       }else{
         osal_snv_write(0x80,20,newValueBuf);
       }

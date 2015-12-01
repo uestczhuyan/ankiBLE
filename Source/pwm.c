@@ -6,14 +6,16 @@
 
 #define INIT_RGB 1
 
-#define RGB_MAX 100
+#define RGB_MAX 200
 
 #define COUNTER 100   
 
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
 #define STATUS_POWER_HIGH 4     
-#define STATUS_HAS_MSG 8      
+#define STATUS_HAS_MSG 8 
+
+#define SWITCHQI P2_0
 
 int16 MAX_R = RGB_MAX;
 int16 MAX_G = RGB_MAX;
@@ -86,12 +88,22 @@ void Timer3_init(){
   T3IE =1;               // Enable T3 cpu interrupt
 }
 
+void init_QI_Switch(){
+  //把2.0 脚设置为 QI开关电路
+  P2DIR |= 0X01;
+  P2SEL &=~0X01;
+  
+  SWITCHQI = 1;
+}
+
 void PWM_init()
 {
-  
+  //init_QI_Switch();
   Timer1_init();
   
   Timer3_init();
+  
+ 
   
   //Timer4_init();
   
@@ -203,6 +215,7 @@ void LedChange(){
       count--;
     }
     
+    
     LED1_Red = 1 + count*MAX_R/COUNTER;
     LED1_Green = 1 + count*MAX_G/COUNTER;
     LED1_Blue = 1 + count*MAX_B/COUNTER;
@@ -210,6 +223,17 @@ void LedChange(){
     LED2_Red = 10 + (50-count)*MAX_R/COUNTER;
     LED2_Green = 10 + (50-count)*MAX_G/COUNTER;
     LED2_Blue = 10 + (50-count)*MAX_B/COUNTER;
+    /*
+    int i = 400;
+    
+    LED1_Red = i ;
+    LED1_Green = i ;
+    LED1_Blue = i ;
+    LED2_Red=i;
+    LED2_Green=i;
+    LED2_Blue=i;
+    */
+    
    
     /*
      LED2_Red = 1 + count*MAX_R/COUNTER;
