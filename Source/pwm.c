@@ -8,7 +8,7 @@
 
 #define RGB_MAX 200
 
-#define COUNTER 100   
+#define COUNTER 50   
 
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
@@ -22,7 +22,7 @@ int16 MAX_G = RGB_MAX;
 int16 MAX_B = RGB_MAX;
 uint8 STATUS = 0;
 
-int8 updown = 1,count = 0;
+char updown = 1,count = 0;
 
 int16 LED1_Red = INIT_RGB;
 int16 LED1_Green = INIT_RGB;
@@ -208,45 +208,44 @@ void LedChange(){
      || STATUS & STATUS_POWER_HIGH){
        
     setLED_EVT();
+  
     
-    if(updown){
-      count++;
-    }else{
-      count--;
-    }
+    LED1_Red = count ;
+    LED1_Green = count ;
+    LED1_Blue = count ;
+    LED2_Red=count;
+    LED2_Green=count;
+    LED2_Blue=count;
     
     
     LED1_Red = 1 + count*MAX_R/COUNTER;
     LED1_Green = 1 + count*MAX_G/COUNTER;
     LED1_Blue = 1 + count*MAX_B/COUNTER;
     
+    /*
     LED2_Red = 10 + (50-count)*MAX_R/COUNTER;
     LED2_Green = 10 + (50-count)*MAX_G/COUNTER;
     LED2_Blue = 10 + (50-count)*MAX_B/COUNTER;
-    /*
-    int i = 400;
-    
-    LED1_Red = i ;
-    LED1_Green = i ;
-    LED1_Blue = i ;
-    LED2_Red=i;
-    LED2_Green=i;
-    LED2_Blue=i;
     */
-    
+
    
-    /*
-     LED2_Red = 1 + count*MAX_R/COUNTER;
+    
+    LED2_Red = 1 + count*MAX_R/COUNTER;
     LED2_Green = 1 + count*MAX_G/COUNTER;
     LED2_Blue = 1 + count*MAX_B/COUNTER;
-    */
+
     
-    if(count >= 50){
-      updown = 0;
-    }
-    if(count <= 0){
-      updown = 1;
-    }
+    if(updown)
+      count++;
+    else
+      count--;
+    
+    if(count >= COUNTER)
+      updown=0;
+    if(count <= 0)
+      updown=1;
+    
+    
   }else{
     LED1_Red = MAX_R;
     LED1_Green = MAX_G;
