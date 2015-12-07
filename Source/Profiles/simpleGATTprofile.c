@@ -139,10 +139,11 @@ static uint8 simpleProfileChar1UserDesp[17] = "Characteristic 1\0";
 
 
 // Simple Profile Characteristic 2 Properties
-static uint8 simpleProfileChar2Props = GATT_PROP_READ;
+static uint8 simpleProfileChar2Props = GATT_PROP_READ | GATT_PROP_WRITE;
 
 // Characteristic 2 Value
-static uint8 simpleProfileChar2 = 0;
+//static uint8 simpleProfileChar2 = 0;
+static uint8 simpleProfileChar2[SIMPLEPROFILE_CHAR1_LEN] = {0};
 
 // Simple Profile Characteristic 2 User Description
 static uint8 simpleProfileChar2UserDesp[17] = "Characteristic 2\0";
@@ -233,9 +234,9 @@ static gattAttribute_t simpleProfileAttrTbl[SERVAPP_NUM_ATTR_SUPPORTED] =
       // Characteristic Value 2
       { 
         { ATT_BT_UUID_SIZE, simpleProfilechar2UUID },
-        GATT_PERMIT_READ, 
+         GATT_PERMIT_READ | GATT_PERMIT_WRITE, 
         0, 
-        &simpleProfileChar2 
+        simpleProfileChar2 
       },
 
       // Characteristic 2 User Description
@@ -445,9 +446,10 @@ bStatus_t SimpleProfile_SetParameter( uint8 param, uint8 len, void *value )
       break;
 
     case SIMPLEPROFILE_CHAR2:
-      if ( len == sizeof ( uint8 ) ) 
+      if ( len == SIMPLEPROFILE_CHAR1_LEN ) 
       {
-        simpleProfileChar2 = *((uint8*)value);
+        //simpleProfileChar2 = *((uint8*)value);
+        VOID osal_memcpy( simpleProfileChar2, value, SIMPLEPROFILE_CHAR1_LEN );
       }
       else
       {
@@ -524,7 +526,8 @@ bStatus_t SimpleProfile_GetParameter( uint8 param, void *value )
       break;
 
     case SIMPLEPROFILE_CHAR2:
-      *((uint8*)value) = simpleProfileChar2;
+      //*((uint8*)value) = simpleProfileChar2;
+       VOID osal_memcpy( value, simpleProfileChar2, SIMPLEPROFILE_CHAR1_LEN ); 
       break;      
 
     case SIMPLEPROFILE_CHAR3:
@@ -658,13 +661,14 @@ static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *
     switch ( uuid )
     {
       case SIMPLEPROFILE_CHAR1_UUID:
+      case SIMPLEPROFILE_CHAR2_UUID:
       case SIMPLEPROFILE_CHAR3_UUID:
 
         //Validate the value
         // Make sure it's not a blob oper
         if ( offset == 0 )
         {
-        	#if 0
+                        #if 0
 			if ( len != SIMPLEPROFILE_CHAR1_LEN )   //len 等于多少是由谁决定的 ，是simpleProfileAttrTbl之characteristic 1之Characteristic Value长度决定的  (错)
 			{				  						//为什么不是其他 characteristic  (错)
 				status = ATT_ERR_INVALID_VALUE_SIZE;
@@ -705,9 +709,11 @@ static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *
           {
             notifyApp = SIMPLEPROFILE_CHAR1;    //除了char1和char3还有其他的吧，特别是char5     
           }
-          else
-
+          else if(pAttr->pValue == simpleProfileChar2)
           {
+            notifyApp = SIMPLEPROFILE_CHAR2;
+          }
+          else{
             notifyApp = SIMPLEPROFILE_CHAR3;
           }
         }

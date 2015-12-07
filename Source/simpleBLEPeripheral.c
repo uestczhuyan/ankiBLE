@@ -345,8 +345,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the SimpleProfile Characteristic Values
   {
-    uint8 charValue1[20] = {0,1,1,250,1,1,220,1,250,1,1,250,1,1,250,1,1,250,1};
-    uint8 charValue2 = 2;
+    uint8 charValue1[20] = {0, 1,1,250,1,1,220,  1,250,1,1,250,1  ,200,250,100,100,100,100};
+    uint8 charValue2[20] = {0,1,1,250,1,1,220,1,250,1,1,250,1,1,250,1,1,250,1};
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
     uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = { 1, 2, 3, 4, 5 };
@@ -375,7 +375,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     
     
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, 20, &charValue1 );
-    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, sizeof ( uint8 ), &charValue2 );
+    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, 20, &charValue2 );
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
     //前面3句只是对对象值的设置，这句代码 进行了，Service的characteristic设置，Process Client Characteristis Configuration Change
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof ( uint8 ), &charValue4 ); 
@@ -828,9 +828,11 @@ static void simpleProfileChangeCB( uint8 paramID )
   switch( paramID )
   {
     case SIMPLEPROFILE_CHAR1:
+      dataChange(-2);
+      break;
+    case SIMPLEPROFILE_CHAR2:
       dataChange(-1);
       break;
-
     case SIMPLEPROFILE_CHAR3:
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &newValue );
 
@@ -848,7 +850,10 @@ static void simpleProfileChangeCB( uint8 paramID )
 
 static void dataChange(int8 phoneStatus){
       uint8 newValueBuf[20]={0};
+      uint8 newValueBuf2[20]={0};
+      
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
+      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
       /*
       #if (defined HAL_LCD) && (HAL_LCD == TRUE)
         //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
@@ -857,14 +862,21 @@ static void dataChange(int8 phoneStatus){
           HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[5], 10,  HAL_LCD_LINE_7 );
       #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
       */
+      
+      if(phoneStatus == -2){
+        HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
+        return;
+      }
 
-      newValueBuf[0] = 1;
+      //newValueBuf[0] = 1;
       if(phoneStatus >=0){
         newValueBuf[0] = 2;
+        //HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
+        //HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
       }else{
         osal_snv_write(0x80,20,newValueBuf);
       }
-      setValus(newValueBuf);
+      setValus(newValueBuf,newValueBuf2);
       LedChange();
 }
 

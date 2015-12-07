@@ -3,6 +3,11 @@
 #include "simpleBLEPeripheral.h"
 #include "OSAL.h"
 
+#include "hal_adc.h"
+#include "hal_led.h"
+#include "hal_key.h"
+#include "hal_lcd.h"
+
 
 #define INIT_RGB 1
 
@@ -20,6 +25,9 @@
 int16 MAX_R = RGB_MAX;
 int16 MAX_G = RGB_MAX;
 int16 MAX_B = RGB_MAX;
+int16 R_K = 0;
+int16 G_K = 0;
+int16 B_K = 0;
 uint8 STATUS = 0;
 
 char updown = 1,count = 0;
@@ -101,7 +109,7 @@ void PWM_init()
   //init_QI_Switch();
   Timer1_init();
   
-  Timer3_init();
+  //Timer3_init();
   
  
   
@@ -182,23 +190,37 @@ void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, in
 }
 
 
-void setValus(uint8 *value){
+void setValus(uint8 *value,uint8 *value2){
   uint8 pos = 1;
+  uint8 *thisValue;
   if(value[0] & STATUS_POWER_LOW){
-    pos = 4;
-  }else if(value[0] & STATUS_POWER_CHARGING){
+    thisValue = value;
     pos = 7;
-  }else if(value[0] & STATUS_POWER_HIGH){
-    pos = 10;
-  }else if(value[0] & STATUS_HAS_MSG){
+  }else if(value[0] & STATUS_POWER_CHARGING){
+    thisValue = value;
     pos = 13;
+  }else if(value[0] & STATUS_POWER_HIGH){
+    pos = 0;
+    thisValue = value2;
+  }else if(value[0] & STATUS_HAS_MSG){
+    pos = 6;
+    thisValue = value2;
   }else{
+    thisValue = value;
     pos = 1; 
   }
-  MAX_R = value[pos];
-  MAX_G = value[pos+1];
-  MAX_B = value[pos+2];
+  MAX_R = thisValue[pos];
+  MAX_G = thisValue[pos+1];
+  MAX_B = thisValue[pos+2];
+  R_K = (thisValue[pos+3] - thisValue[pos]) ;
+  G_K = (thisValue[pos+4] - thisValue[pos+1]);
+  B_K = (thisValue[pos+5] - thisValue[pos+2]);
+  HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
+  HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
+  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
   STATUS = value[0];
+  
+  count = 0;
 }
 
 void LedChange(){
@@ -209,7 +231,7 @@ void LedChange(){
        
     setLED_EVT();
   
-    
+    /*
     LED1_Red = count ;
     LED1_Green = count ;
     LED1_Blue = count ;
@@ -218,15 +240,17 @@ void LedChange(){
     LED2_Blue=count;
     
     
-    LED1_Red = 1 + count*MAX_R/COUNTER;
-    LED1_Green = 1 + count*MAX_G/COUNTER;
-    LED1_Blue = 1 + count*MAX_B/COUNTER;
     
-    /*
+    
+    
     LED2_Red = 10 + (50-count)*MAX_R/COUNTER;
     LED2_Green = 10 + (50-count)*MAX_G/COUNTER;
     LED2_Blue = 10 + (50-count)*MAX_B/COUNTER;
     */
+    
+    LED1_Red = MAX_R + count*R_K/COUNTER;
+    LED1_Green = MAX_G + count*G_K/COUNTER;
+    LED1_Blue = MAX_B + count*B_K/COUNTER;
 
    
     
@@ -240,8 +264,9 @@ void LedChange(){
     else
       count--;
     
-    if(count >= COUNTER)
+    if(count >= 50)
       updown=0;
+      //count = 0;
     if(count <= 0)
       updown=1;
     
