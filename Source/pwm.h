@@ -19,4 +19,6 @@ void setValus(uint8 *value,uint8 *value2);
 
 void LedChange();
 
+void init_QI_Switch(int8 on);
+
 #endif

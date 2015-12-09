@@ -499,6 +499,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Set timer for first periodic event
     //init LED
     PWM_init();
+    init_QI_Switch(1);
     dataChange(0);
     
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
@@ -865,6 +866,7 @@ static void dataChange(int8 phoneStatus){
       
       if(phoneStatus == -2){
         HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
+        init_QI_Switch(newValueBuf[1]);
         return;
       }
 

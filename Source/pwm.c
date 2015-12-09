@@ -96,17 +96,24 @@ void Timer3_init(){
   T3IE =1;               // Enable T3 cpu interrupt
 }
 
-void init_QI_Switch(){
-  //把2.0 脚设置为 QI开关电路
-  P2DIR |= 0X01;
-  P2SEL &=~0X01;
-  
-  SWITCHQI = 1;
+void init_QI_Switch(int8 on){
+  if(on > 0){
+    SWITCHQI = 1;
+    HalLcdWriteStringValue( "pos: up", on, 10,  HAL_LCD_LINE_6 );
+  }else{
+    SWITCHQI = 0;
+    HalLcdWriteStringValue( "pos: down", on, 10,  HAL_LCD_LINE_6 );
+  }
 }
 
 void PWM_init()
 {
   //init_QI_Switch();
+  //把2.0 脚设置为 QI开关电路
+  P2DIR |= 0X01;
+  P2SEL &=~0X01;
+  
+  
   Timer1_init();
   
   //Timer3_init();
@@ -195,10 +202,10 @@ void setValus(uint8 *value,uint8 *value2){
   uint8 *thisValue;
   if(value[0] & STATUS_POWER_LOW){
     thisValue = value;
-    pos = 7;
+    pos = 8;
   }else if(value[0] & STATUS_POWER_CHARGING){
     thisValue = value;
-    pos = 13;
+    pos = 14;
   }else if(value[0] & STATUS_POWER_HIGH){
     pos = 0;
     thisValue = value2;
@@ -217,7 +224,7 @@ void setValus(uint8 *value,uint8 *value2){
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
   HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
   HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
-  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
+  //HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
   STATUS = value[0];
   
   count = 0;
