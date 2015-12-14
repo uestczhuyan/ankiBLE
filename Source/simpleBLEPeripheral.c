@@ -128,8 +128,6 @@
 #define RSSI_RATE                             50
 
 
-#define HAL_RED_LINE_PIN       1
-
 
 /*********************************************************************
  * TYPEDEFS
@@ -491,10 +489,6 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
     // Start Bond Manager
     VOID GAPBondMgr_Register( &simpleBLEPeripheral_BondMgrCBs );
-
-    //init redLine
-    P0DIR &= ~BV(HAL_RED_LINE_PIN);  //输入，外设
-    P0SEL &= ~BV(HAL_RED_LINE_PIN);
     
     // Set timer for first periodic event
     //init LED
@@ -511,24 +505,12 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   {
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
-    /*
-    if(P0_1 == 1){
-      for(int i = 0 ; i<255 ; i++){
-          for(int j = 0 ; j<255 ; j++){
-          }
-      }
-      if(P0_1 == 1){
+    
+    if(P1_1 == 1){
         HalLcdWriteString("HEIGH",HAL_LCD_LINE_4);
-      }
     }else{
-      for(int i = 0 ; i<255 ; i++){
-          for(int j = 0 ; j<255 ; j++){
-          }
-      }
-      if(P0_1 != 1){
         HalLcdWriteString("LOW",HAL_LCD_LINE_4);
-      }
-    }*/
+    }
 
     LedChange();
     return (events ^ SBP_PERIODIC_EVT);

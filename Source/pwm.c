@@ -22,6 +22,8 @@
 
 #define SWITCHQI P2_0
 
+#define HAL_RED_LINE_PIN       1
+
 int16 MAX_R = RGB_MAX;
 int16 MAX_G = RGB_MAX;
 int16 MAX_B = RGB_MAX;
@@ -78,6 +80,7 @@ void Timer3_init(){
    //T3 备用1 位置  占用P1的0、1端口，   占用P0的 6、7端口
   P1DIR|= 0xC0;
   P1SEL|= 0xC0;
+  
  
   P2SEL |= 0x20;
   
@@ -106,6 +109,11 @@ void init_QI_Switch(int8 on){
   }
 }
 
+void initRedLine(){
+  P1DIR &= ~BV(HAL_RED_LINE_PIN);  //输入，外设
+  P1SEL &= ~BV(HAL_RED_LINE_PIN);
+}
+
 void PWM_init()
 {
   //init_QI_Switch();
@@ -113,11 +121,16 @@ void PWM_init()
   P2DIR |= 0X01;
   P2SEL &=~0X01;
   
+   //init redLine
+  
+  
   
   Timer1_init();
   
-  //Timer3_init();
+  Timer3_init();
   
+  
+  //initRedLine();
  
   
   //Timer4_init();
@@ -222,8 +235,8 @@ void setValus(uint8 *value,uint8 *value2){
   R_K = (thisValue[pos+3] - thisValue[pos]) ;
   G_K = (thisValue[pos+4] - thisValue[pos+1]);
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
-  HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
-  HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
+  //HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
+  //HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
   //HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
   STATUS = value[0];
   
@@ -261,9 +274,9 @@ void LedChange(){
 
    
     
-    LED2_Red = 1 + count*MAX_R/COUNTER;
-    LED2_Green = 1 + count*MAX_G/COUNTER;
-    LED2_Blue = 1 + count*MAX_B/COUNTER;
+    LED2_Red = MAX_R + (COUNTER -count)*R_K/COUNTER;
+    LED2_Green = MAX_G + (COUNTER-count)*G_K/COUNTER;
+    LED2_Blue = MAX_B + (COUNTER-count)*B_K/COUNTER;
 
     
     if(updown)
@@ -271,7 +284,7 @@ void LedChange(){
     else
       count--;
     
-    if(count >= 50)
+    if(count >= COUNTER)
       updown=0;
       //count = 0;
     if(count <= 0)
