@@ -352,12 +352,14 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
      #if (defined HAL_LCD) && (HAL_LCD == TRUE)
       //从文件中读取
       uint8 wirteTag = osal_snv_read(0x80,20,charValue1);
+      osal_snv_read(0x95,20,charValue2);
       if( wirteTag == SUCCESS){
           HalLcdWriteStringValue("read Ok",(uint16)wirteTag,10, HAL_LCD_LINE_6 );
       }else{
         HalLcdWriteStringValue("read failed",(uint16)wirteTag,10, HAL_LCD_LINE_6 );
            //进行初始化
          wirteTag = osal_snv_write(0x80,20,charValue1);
+         osal_snv_write(0x95,20,charValue1);
          if(wirteTag == SUCCESS){
             HalLcdWriteStringValue( "init", (uint16)wirteTag, 10,  HAL_LCD_LINE_7 );
          }else{
@@ -368,6 +370,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
       if( osal_snv_read(0x80,20,charValue1) != SUCCESS){
            //进行初始化
          osal_snv_write(0x80,20,charValue1);
+         osal_snv_write(0x95,20,charValue2);
       }
      #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
     
@@ -833,32 +836,26 @@ static void simpleProfileChangeCB( uint8 paramID )
 
 static void dataChange(int8 phoneStatus){
       uint8 newValueBuf[20]={0};
-      uint8 newValueBuf2[20]={0};
-      
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
-      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
-      /*
-      #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-        //HalLcdWriteString((char*)newValueBuf, HAL_LCD_LINE_4 );
-        HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[6], 10,  HAL_LCD_LINE_5 );
-         HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[4], 10,  HAL_LCD_LINE_6 );
-          HalLcdWriteStringValue( "asdad", (uint16)newValueBuf[5], 10,  HAL_LCD_LINE_7 );
-      #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-      */
+   
       
       if(phoneStatus == -2){
         HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
         init_QI_Switch(newValueBuf[1]);
         return;
       }
+      
+      uint8 newValueBuf2[20]={0};
+      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
 
       //newValueBuf[0] = 1;
       if(phoneStatus >=0){
-        newValueBuf[0] = 2;
+        //newValueBuf[0] = 2;
         //HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
         //HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
       }else{
         osal_snv_write(0x80,20,newValueBuf);
+        osal_snv_write(0x80,20,newValueBuf2);
       }
       setValus(newValueBuf,newValueBuf2);
       LedChange();
