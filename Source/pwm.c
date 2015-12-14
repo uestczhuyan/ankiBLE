@@ -9,7 +9,7 @@
 #include "hal_lcd.h"
 
 
-#define INIT_RGB 1
+#define INIT_RGB 200
 
 #define RGB_MAX 200
 
