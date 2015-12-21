@@ -846,8 +846,8 @@ static void dataChange(int8 phoneStatus){
       LedChange();
 }
 
-void setLED_EVT(){
-  osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+void setLED_EVT(uint8 value){
+  osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, value );
 }
 
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)

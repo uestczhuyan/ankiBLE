@@ -13,16 +13,19 @@
 
 #define RGB_MAX 200
 
-#define COUNTER 50   
+#define COUNTER 50
+#define CHANGE_COUNTER 40
 
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
 #define STATUS_POWER_HIGH 4     
 #define STATUS_HAS_MSG 8 
 
-#define SWITCHQI P2_0
+#define SWITCHQI P0_3
 
 #define HAL_RED_LINE_PIN       1
+
+#define DARK_RGB  255
 
 int16 MAX_R = RGB_MAX;
 int16 MAX_G = RGB_MAX;
@@ -30,9 +33,13 @@ int16 MAX_B = RGB_MAX;
 int16 R_K = 0;
 int16 G_K = 0;
 int16 B_K = 0;
+
 uint8 STATUS = 0;
 
-char updown = 1,count = 0;
+char updown = 1,count = 0,changed=0;
+int16 Change_G = 0;
+int16 Change_R = 0;
+int16 Change_B = 0;
 
 int16 LED1_Red = INIT_RGB;
 int16 LED1_Green = INIT_RGB;
@@ -102,10 +109,10 @@ void Timer3_init(){
 void init_QI_Switch(int8 on){
   if(on > 0){
     SWITCHQI = 1;
-    HalLcdWriteStringValue( "pos: up", on, 10,  HAL_LCD_LINE_6 );
+    //HalLcdWriteStringValue( "pos: up", on, 10,  HAL_LCD_LINE_6 );
   }else{
     SWITCHQI = 0;
-    HalLcdWriteStringValue( "pos: down", on, 10,  HAL_LCD_LINE_6 );
+    //HalLcdWriteStringValue( "pos: down", on, 10,  HAL_LCD_LINE_6 );
   }
 }
 
@@ -116,18 +123,14 @@ void initRedLine(){
 
 void PWM_init()
 {
-  //init_QI_Switch();
-  //把2.0 脚设置为 QI开关电路
-  P2DIR |= 0X01;
-  P2SEL &=~0X01;
-  
-   //init redLine
-  
-  
   
   Timer1_init();
   
   Timer3_init();
+  
+  //把2.0 脚设置为 QI开关电路
+  P0DIR |= 0X08;
+  P0SEL &=~0X08;
   
   
   //initRedLine();
@@ -240,66 +243,100 @@ void setValus(uint8 *value,uint8 *value2){
   //HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
   STATUS = value[0];
   
-  count = 0;
+  changed = 1;
+  count = 1;
+  updown = 1;
 }
 
 void LedChange(){
-  //如果手机再充电 那么需要设置事件进行循环驱动变化
-  if(STATUS & STATUS_POWER_LOW
-     || STATUS & STATUS_POWER_CHARGING
-     || STATUS & STATUS_POWER_HIGH){
-       
-    setLED_EVT();
   
-    /*
-    LED1_Red = count ;
-    LED1_Green = count ;
-    LED1_Blue = count ;
-    LED2_Red=count;
-    LED2_Green=count;
-    LED2_Blue=count;
-    
-    
-    
-    
-    
-    LED2_Red = 10 + (50-count)*MAX_R/COUNTER;
-    LED2_Green = 10 + (50-count)*MAX_G/COUNTER;
-    LED2_Blue = 10 + (50-count)*MAX_B/COUNTER;
-    */
-    
-    LED1_Red = MAX_R + count*R_K/COUNTER;
-    LED1_Green = MAX_G + count*G_K/COUNTER;
-    LED1_Blue = MAX_B + count*B_K/COUNTER;
+  //如果正在状态切换。那么就进行淡入淡出效果
+  if(changed == 0){
+    //如果手机再充电 那么需要设置事件进行循环驱动变化
+    if(STATUS & STATUS_POWER_LOW
+       || STATUS & STATUS_POWER_CHARGING
+       || STATUS & STATUS_POWER_HIGH){
+         
+      
+      LED1_Red = MAX_R + count*R_K/COUNTER;
+      LED1_Green = MAX_G + count*G_K/COUNTER;
+      LED1_Blue = MAX_B + count*B_K/COUNTER;
+      
+      LED2_Red = LED1_Red;
+      LED2_Green = LED1_Green;
+      LED2_Blue = LED1_Blue;
 
-   
-    
-    LED2_Red = MAX_R + (COUNTER -count)*R_K/COUNTER;
-    LED2_Green = MAX_G + (COUNTER-count)*G_K/COUNTER;
-    LED2_Blue = MAX_B + (COUNTER-count)*B_K/COUNTER;
+     
+      /*
+      LED2_Red = MAX_R + (COUNTER -count)*R_K/COUNTER;
+      LED2_Green = MAX_G + (COUNTER-count)*G_K/COUNTER;
+      LED2_Blue = MAX_B + (COUNTER-count)*B_K/COUNTER;
+      */
 
-    
-    if(updown)
-      count++;
-    else
-      count--;
-    
-    if(count >= COUNTER)
-      updown=0;
-      //count = 0;
-    if(count <= 0)
-      updown=1;
-    
-    
+      
+      if(updown)
+        count++;
+      else
+        count--;
+      
+      if(count >= COUNTER)
+        updown=0;
+        //count = 0;
+      if(count <= 0)
+        updown=1;
+      
+      
+    }else{
+      LED1_Red = MAX_R;
+      LED1_Green = MAX_G;
+      LED1_Blue = MAX_B;
+      LED2_Red = MAX_R;
+      LED2_Green = MAX_G;
+      LED2_Blue = MAX_B;
+    }
   }else{
-    LED1_Red = MAX_R;
-    LED1_Green = MAX_G;
-    LED1_Blue = MAX_B;
-    LED2_Red = MAX_R;
-    LED2_Green = MAX_G;
-    LED2_Blue = MAX_B;
+    
+    //过渡效果
+    if(changed == 1){
+      if(count == 1){
+        Change_R = LED1_Red;
+        Change_G = LED1_Green;
+        Change_B = LED1_Blue;
+      }
+      //当前颜色变暗
+      LED1_Red = Change_R + count*(DARK_RGB - Change_R)/CHANGE_COUNTER;
+      LED1_Green = Change_G + count*(DARK_RGB - Change_G)/CHANGE_COUNTER;
+      LED1_Blue = Change_B + count*(DARK_RGB - Change_B)/CHANGE_COUNTER;
+      LED2_Red = Change_R + count*(DARK_RGB - Change_R)/CHANGE_COUNTER;
+      LED2_Green = Change_G + count*(DARK_RGB - Change_G)/CHANGE_COUNTER;
+      LED2_Blue = Change_B + count*(DARK_RGB - Change_B)/CHANGE_COUNTER;
+    }else{
+      //当前颜色变到明亮
+      LED1_Red = MAX_R + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_R)/CHANGE_COUNTER;
+      LED1_Green = MAX_G + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_G)/CHANGE_COUNTER;
+      LED1_Blue = MAX_B + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_B)/CHANGE_COUNTER;
+      LED2_Red = MAX_R + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_R)/CHANGE_COUNTER;
+      LED2_Green = MAX_G + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_G)/CHANGE_COUNTER;
+      LED2_Blue = MAX_B + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_B)/CHANGE_COUNTER;
+    }
+    
+    count++;
+    if(count > CHANGE_COUNTER){
+      if(changed == 1){
+        count = 1;
+        changed = 2;
+        setLED_EVT(SBP_PERIODIC_EVT_PERIOD*5);
+        return;
+      }else{
+        count = 1;
+        updown = 1;
+        changed = 0;
+      }
+    }
   }
   
   pwmPulse();
   pwmPulse3();
+  
+  setLED_EVT(SBP_PERIODIC_EVT_PERIOD);
 }

@@ -84,7 +84,7 @@ extern void SimpleBLEPeripheral_Init( uint8 task_id );
  */
 extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
    
-void setLED_EVT();
+void setLED_EVT(uint8 value);
 
 /*********************************************************************
 *********************************************************************/
