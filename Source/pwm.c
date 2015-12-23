@@ -9,7 +9,7 @@
 #include "hal_lcd.h"
 
 
-#define INIT_RGB 200
+#define INIT_RGB 255
 
 #define RGB_MAX 200
 
@@ -19,7 +19,9 @@
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
 #define STATUS_POWER_HIGH 4     
-#define STATUS_HAS_MSG 8 
+#define STATUS_HAS_MSG 8
+#define STATUS_CONNECTED 16
+
 
 #define SWITCHQI P0_3
 
@@ -126,7 +128,7 @@ void PWM_init()
   
   Timer1_init();
   
-  Timer3_init();
+  //Timer3_init();
   
   //把2.0 脚设置为 QI开关电路
   P0DIR |= 0X08;
@@ -213,8 +215,8 @@ void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, in
 }
 
 
-void setValus(uint8 *value,uint8 *value2){
-  uint8 pos = 1;
+void setValus(uint8 *value,uint8 *value2,uint8 isChange){
+  uint8 pos = 2;
   uint8 *thisValue;
   if(value[0] & STATUS_POWER_LOW){
     thisValue = value;
@@ -230,7 +232,7 @@ void setValus(uint8 *value,uint8 *value2){
     thisValue = value2;
   }else{
     thisValue = value;
-    pos = 1; 
+    pos = 2; 
   }
   MAX_R = thisValue[pos];
   MAX_G = thisValue[pos+1];
@@ -238,14 +240,20 @@ void setValus(uint8 *value,uint8 *value2){
   R_K = (thisValue[pos+3] - thisValue[pos]) ;
   G_K = (thisValue[pos+4] - thisValue[pos+1]);
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
-  //HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
-  //HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
-  //HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
+  
+  
+  HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
+  HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
+  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
+  /*
+  */
   STATUS = value[0];
   
-  changed = 1;
-  count = 1;
-  updown = 1;
+  if(isChange == 1){
+    changed = 1;
+    count = 1;
+    updown = 1; 
+  }
 }
 
 void LedChange(){
@@ -255,7 +263,8 @@ void LedChange(){
     //如果手机再充电 那么需要设置事件进行循环驱动变化
     if(STATUS & STATUS_POWER_LOW
        || STATUS & STATUS_POWER_CHARGING
-       || STATUS & STATUS_POWER_HIGH){
+       || STATUS & STATUS_POWER_HIGH
+       || STATUS & STATUS_CONNECTED){
          
       
       LED1_Red = MAX_R + count*R_K/COUNTER;
@@ -287,12 +296,12 @@ void LedChange(){
       
       
     }else{
-      LED1_Red = MAX_R;
-      LED1_Green = MAX_G;
-      LED1_Blue = MAX_B;
-      LED2_Red = MAX_R;
-      LED2_Green = MAX_G;
-      LED2_Blue = MAX_B;
+      LED1_Red = DARK_RGB;
+      LED1_Green = DARK_RGB;
+      LED1_Blue = DARK_RGB;
+      LED2_Red = DARK_RGB;
+      LED2_Green = DARK_RGB;
+      LED2_Blue = DARK_RGB;
     }
   }else{
     
@@ -325,6 +334,8 @@ void LedChange(){
       if(changed == 1){
         count = 1;
         changed = 2;
+        pwmPulse();
+        pwmPulse3();
         setLED_EVT(SBP_PERIODIC_EVT_PERIOD*5);
         return;
       }else{

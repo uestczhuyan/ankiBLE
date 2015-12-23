@@ -126,6 +126,8 @@
 
 //RSSI的获取速率
 #define RSSI_RATE                             50
+   
+#define RSSI_CHANGE                           -75
 
 
 
@@ -148,6 +150,8 @@
 
 
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
+
+static int8 lastRSSI = -100;
 
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
@@ -205,7 +209,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void rssiRead(int8 newRSSI);
 //static void performPeriodicTask( void );
 //static void performLEDTask( void );
-static void dataChange(int8 phoneStatus);
+static void dataChange(int8 phoneStatus,uint8 isChange);
 static void simpleProfileChangeCB( uint8 paramID );
 
 #if defined( CC2540_MINIDK )
@@ -343,8 +347,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the SimpleProfile Characteristic Values
   {
-    uint8 charValue1[20] = {0, 1,1,250,1,1,220,  1,250,1,1,250,1  ,200,250,100,100,100,100};
-    uint8 charValue2[20] = {0,1,1,250,1,1,220,1,250,1,1,250,1,1,250,1,1,250,1};
+    uint8 charValue1[20] = {0, 1,20,250,1,255,220,  1,20,1,1,20,1  ,200,20,100,100,20,100};
+    uint8 charValue2[20] = {20,1,1,20,1,1,20,1,250,20,1,250,20,1,250,20,1,250,1};
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
     uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = { 1, 2, 3, 4, 5 };
@@ -482,7 +486,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //init LED
     PWM_init();
     init_QI_Switch(1);
-    dataChange(0);
+    //dataChange(0);
     
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //LedChange();
@@ -495,9 +499,9 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //执行灯光change的函数
     
     if(P1_1 == 1){
-        HalLcdWriteString("HEIGH",HAL_LCD_LINE_4);
+        //HalLcdWriteString("HEIGH",HAL_LCD_LINE_4);
     }else{
-        HalLcdWriteString("LOW",HAL_LCD_LINE_4);
+        //HalLcdWriteString("LOW",HAL_LCD_LINE_4);
     }
 
     LedChange();
@@ -649,6 +653,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_ADVERTISING:
       {
+        lastRSSI=-100;
+        dataChange(0,0);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -737,14 +743,25 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 *
 */
 //static uint16 countRSSI = 0;
-static int8 lastRSSI = 0;
+
 static void rssiRead( int8 newRSSI )
 {
   //进行相关处理
-  if(lastRSSI != newRSSI){
+     
+    //HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+    if(lastRSSI >= RSSI_CHANGE && newRSSI < RSSI_CHANGE){
+      dataChange(0,0);
+      HalLcdWriteStringValue( "RSS I ：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+    }else if(lastRSSI<RSSI_CHANGE && newRSSI >=RSSI_CHANGE ){
+      HalLcdWriteStringValue( "RSSIk：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+      dataChange(16,0);
+    }
+    
     lastRSSI = newRSSI;
-    HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
-  }
+  /*if(lastRSSI != newRSSI){ 
+  }else{
+    HalLcdWriteStringValue( "R SSI ", -newRSSI, 10,  HAL_LCD_LINE_8 );
+  }*/
   
 }
 
@@ -799,10 +816,10 @@ static void simpleProfileChangeCB( uint8 paramID )
   switch( paramID )
   {
     case SIMPLEPROFILE_CHAR1:
-      dataChange(-2);
+      dataChange(-2,1);
       break;
     case SIMPLEPROFILE_CHAR2:
-      dataChange(-1);
+      dataChange(-1,1);
       break;
     case SIMPLEPROFILE_CHAR3:
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &newValue );
@@ -819,7 +836,8 @@ static void simpleProfileChangeCB( uint8 paramID )
   }
 }
 
-static void dataChange(int8 phoneStatus){
+static void dataChange(int8 phoneStatus,uint8 isChange){
+      HalLcdWriteStringValue( "phoneStatus +：", phoneStatus, 10,  HAL_LCD_LINE_7 );
       uint8 newValueBuf[20]={0};
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
    
@@ -834,15 +852,15 @@ static void dataChange(int8 phoneStatus){
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
 
       //newValueBuf[0] = 1;
-      if(phoneStatus >=0){
-        //newValueBuf[0] = 2;
+      
+      if(phoneStatus >0){
+        newValueBuf[0] = phoneStatus;
         //HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
         //HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
-      }else{
-        osal_snv_write(0x80,20,newValueBuf);
-        osal_snv_write(0x80,20,newValueBuf2);
       }
-      setValus(newValueBuf,newValueBuf2);
+      osal_snv_write(0x80,20,newValueBuf);
+      osal_snv_write(0x80,20,newValueBuf2);
+      setValus(newValueBuf,newValueBuf2,isChange);
       LedChange();
 }
 
