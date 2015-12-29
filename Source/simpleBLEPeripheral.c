@@ -654,7 +654,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
     case GAPROLE_ADVERTISING:
       {
         lastRSSI=-100;
-        dataChange(0,0);
+        dataChange(0,3);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -750,11 +750,15 @@ static void rssiRead( int8 newRSSI )
      
     //HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     if(lastRSSI >= RSSI_CHANGE && newRSSI < RSSI_CHANGE){
-      dataChange(0,0);
+      //手机远离
+      dataChange(0,3);
       HalLcdWriteStringValue( "RSS I ：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }else if(lastRSSI<RSSI_CHANGE && newRSSI >=RSSI_CHANGE ){
+      //手机进入
+      dataChange(16,2);
       HalLcdWriteStringValue( "RSSIk：", -newRSSI, 10,  HAL_LCD_LINE_8 );
-      dataChange(16,0);
+    }else{
+      HalLcdWriteStringValue( "RSSIo：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }
     
     lastRSSI = newRSSI;

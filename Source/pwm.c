@@ -14,7 +14,7 @@
 #define RGB_MAX 200
 
 #define COUNTER 50
-#define CHANGE_COUNTER 40
+#define CHANGE_COUNTER 80
 
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
@@ -249,8 +249,11 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   */
   STATUS = value[0];
   
-  if(isChange == 1){
-    changed = 1;
+  if(isChange != 0 ){
+    // 1 表示 当前颜色变暗 然后变亮
+    // 2 表示 有0变亮
+    // 3 表示 由目前变暗
+    changed = isChange;
     count = 1;
     updown = 1; 
   }
@@ -306,7 +309,7 @@ void LedChange(){
   }else{
     
     //过渡效果
-    if(changed == 1){
+    if(changed == 1 || changed == 3){
       if(count == 1){
         Change_R = LED1_Red;
         Change_G = LED1_Green;
@@ -319,7 +322,7 @@ void LedChange(){
       LED2_Red = Change_R + count*(DARK_RGB - Change_R)/CHANGE_COUNTER;
       LED2_Green = Change_G + count*(DARK_RGB - Change_G)/CHANGE_COUNTER;
       LED2_Blue = Change_B + count*(DARK_RGB - Change_B)/CHANGE_COUNTER;
-    }else{
+    }else if(changed == 2){
       //当前颜色变到明亮
       LED1_Red = MAX_R + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_R)/CHANGE_COUNTER;
       LED1_Green = MAX_G + (CHANGE_COUNTER - count)*(DARK_RGB - MAX_G)/CHANGE_COUNTER;
@@ -333,7 +336,11 @@ void LedChange(){
     if(count > CHANGE_COUNTER){
       if(changed == 1){
         count = 1;
-        changed = 2;
+        if(changed == 3){
+          changed = 0;
+        }else{
+          changed = 1;
+        }
         pwmPulse();
         pwmPulse3();
         setLED_EVT(SBP_PERIODIC_EVT_PERIOD*5);
