@@ -347,6 +347,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the SimpleProfile Characteristic Values
   {
+    //初始化编译进去的灯光颜色
     uint8 charValue1[20] = {0, 1,20,250,1,255,220,  1,20,1,1,20,1  ,200,20,100,100,20,100};
     uint8 charValue2[20] = {20,1,1,20,1,1,20,1,250,20,1,250,20,1,250,20,1,250,1};
     uint8 charValue3 = 3;
@@ -653,6 +654,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_ADVERTISING:
       {
+        //蓝牙断开那么灯光关闭
         lastRSSI=-100;
         dataChange(0,3);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -747,7 +749,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 static void rssiRead( int8 newRSSI )
 {
   //进行相关处理
-     
+    
     //HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     if(lastRSSI >= RSSI_CHANGE && newRSSI < RSSI_CHANGE){
       //手机远离
@@ -840,12 +842,17 @@ static void simpleProfileChangeCB( uint8 paramID )
   }
 }
 
+/**
+* 改变灯光的函数，phoneStatus 手机状态，isChange 是否播放切换效果。
+* phoneStatus = -2 表示读取到了characteristic1 的数组值。
+* phoneStatus = -1 表示读取到了characteristic2 的数组值。
+*/
 static void dataChange(int8 phoneStatus,uint8 isChange){
       HalLcdWriteStringValue( "phoneStatus +：", phoneStatus, 10,  HAL_LCD_LINE_7 );
       uint8 newValueBuf[20]={0};
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
    
-      
+      //只读取到数组1的数据，先不改变灯光只记录下来，等数组2的数据被读到后才进行灯光改变的操作。
       if(phoneStatus == -2){
         HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
         init_QI_Switch(newValueBuf[1]);
@@ -862,8 +869,10 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
         //HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
         //HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
       }
+      //写入到flash中
       osal_snv_write(0x80,20,newValueBuf);
       osal_snv_write(0x80,20,newValueBuf2);
+      //改变等颜色
       setValus(newValueBuf,newValueBuf2,isChange);
       LedChange();
 }
