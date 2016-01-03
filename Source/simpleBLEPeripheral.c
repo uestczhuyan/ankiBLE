@@ -348,7 +348,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   // Setup the SimpleProfile Characteristic Values
   {
     //初始化编译进去的灯光颜色
-    uint8 charValue1[20] = {0, 1,20,250,1,255,220,  1,20,1,1,20,1  ,200,20,100,100,20,100};
+    uint8 charValue1[20] = {0, 1,100,250,1,255,220,1,   20,1,1,255,1,200,    20,100,100,20,100,10};
     uint8 charValue2[20] = {20,1,1,20,1,1,20,1,250,20,1,250,20,1,250,20,1,250,1};
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
@@ -487,7 +487,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //init LED
     PWM_init();
     init_QI_Switch(1);
-    //dataChange(0);
+    //dataChange(1,0);
     
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //LedChange();
@@ -656,7 +656,9 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
       {
         //蓝牙断开那么灯光关闭
         lastRSSI=-100;
+        //初始化的时候会调用
         dataChange(0,3);
+        //dataChange(1,2);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -866,9 +868,10 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
       
       if(phoneStatus >0){
         newValueBuf[0] = phoneStatus;
-        //HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
-        //HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
+        HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
+        HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
       }
+       HalLcdWriteStringValue( "status:", newValueBuf[0], 10,  HAL_LCD_LINE_6 );
       //写入到flash中
       osal_snv_write(0x80,20,newValueBuf);
       osal_snv_write(0x80,20,newValueBuf2);

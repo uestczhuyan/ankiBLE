@@ -37,6 +37,7 @@ int16 G_K = 0;
 int16 B_K = 0;
 
 uint8 STATUS = 0;
+uint8 LAST_STATUS = 0;
 
 char updown = 1,count = 0,changed=0;
 int16 Change_G = 0;
@@ -50,6 +51,8 @@ int16 LED1_Blue = INIT_RGB;
 int16 LED2_Red = INIT_RGB;
 int16 LED2_Green = INIT_RGB;
 int16 LED2_Blue = INIT_RGB;
+
+uint16 all_counter = 0;
 
 void Timer1_init(){
   //T1 备用1 位置  占用P1的0、1端口，   占用P0的 6、7端口
@@ -242,11 +245,20 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
   
   
-  HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
-  HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
-  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
-  /*
-  */
+  //HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
+  //HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
+  //HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
+  
+  
+  if(value[0] != STATUS){
+    LAST_STATUS = STATUS;
+  }
+  //如果上个状态是连接状态，并且当前状态不是连接状态 那么把当前状态记录到LastStatus中
+  if(STATUS & STATUS_CONNECTED 
+      && !(value[0] & STATUS_CONNECTED)){
+        LAST_STATUS = value[0];
+        return;
+  }
   STATUS = value[0];
   
   if(isChange != 0 ){
@@ -256,10 +268,38 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
     changed = isChange;
     count = 1;
     updown = 1; 
+    all_counter=0;
   }
 }
 
 void LedChange(){
+  
+  all_counter++;
+  
+  if(LAST_STATUS & STATUS_CONNECTED || STATUS & STATUS_CONNECTED){
+    if(all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 5){
+      //迎宾灯跑完5s 之后，切换到上一个状态
+      
+      STATUS = LAST_STATUS;
+      LAST_STATUS = STATUS_CONNECTED;
+      if(STATUS > 0){
+        changed = 1;
+      }else{
+        changed = 3;
+      }
+      count = 1;
+      updown = 1; 
+      all_counter=0;
+    }
+  }else if( STATUS > 0 && all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 20){
+      //计时20 s 后关闭灯光
+      LAST_STATUS = STATUS;
+      STATUS = 0;
+      changed = 3;
+      count = 1;
+      updown = 1; 
+      all_counter=0;
+  }
   
   //如果正在状态切换。那么就进行淡入淡出效果
   if(changed == 0){
@@ -307,6 +347,8 @@ void LedChange(){
       LED2_Blue = DARK_RGB;
     }
   }else{
+    //过渡效果中 那么计时器不开始
+    all_counter = 0;
     
     //过渡效果
     if(changed == 1 || changed == 3){
@@ -334,7 +376,7 @@ void LedChange(){
     
     count++;
     if(count > CHANGE_COUNTER){
-      if(changed == 1){
+      if(changed != 2){
         count = 1;
         if(changed == 3){
           changed = 0;
@@ -351,6 +393,7 @@ void LedChange(){
         changed = 0;
       }
     }
+    
   }
   
   pwmPulse();
