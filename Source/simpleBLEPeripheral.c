@@ -348,7 +348,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   // Setup the SimpleProfile Characteristic Values
   {
     //初始化编译进去的灯光颜色
-    uint8 charValue1[20] = {0, 1,100,250,1,255,220,1,   20,1,1,255,1,200,    20,100,100,20,100,10};
+    uint8 charValue1[20] = {0, 1,255,100,100,255,255,255,   20,1,1,255,1,200,    20,100,100,20,100,10};
     uint8 charValue2[20] = {20,1,1,20,1,1,20,1,250,20,1,250,20,1,250,20,1,250,1};
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
@@ -856,7 +856,7 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
    
       //只读取到数组1的数据，先不改变灯光只记录下来，等数组2的数据被读到后才进行灯光改变的操作。
       if(phoneStatus == -2){
-        HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
+        //HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
         init_QI_Switch(newValueBuf[1]);
         return;
       }

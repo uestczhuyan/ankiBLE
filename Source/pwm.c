@@ -40,6 +40,8 @@ uint8 STATUS = 0;
 uint8 LAST_STATUS = 0;
 
 char updown = 1,count = 0,changed=0;
+uint8 *temp_value1;
+uint8 *temp_value2;
 int16 Change_G = 0;
 int16 Change_R = 0;
 int16 Change_B = 0;
@@ -217,8 +219,8 @@ void setRGB(int16 LED1_red, int16 LED1_green, int16 LED1_blue,int16 LED2_red, in
   LED2_Blue=LED2_blue; 
 }
 
-
-void setValus(uint8 *value,uint8 *value2,uint8 isChange){
+void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
+  
   uint8 pos = 2;
   uint8 *thisValue;
   if(value[0] & STATUS_POWER_LOW){
@@ -244,22 +246,12 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   G_K = (thisValue[pos+4] - thisValue[pos+1]);
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
   
-  
-  //HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
-  //HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
-  //HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
-  
-  
-  if(value[0] != STATUS){
-    LAST_STATUS = STATUS;
-  }
-  //如果上个状态是连接状态，并且当前状态不是连接状态 那么把当前状态记录到LastStatus中
-  if(STATUS & STATUS_CONNECTED 
-      && !(value[0] & STATUS_CONNECTED)){
-        LAST_STATUS = value[0];
-        return;
-  }
   STATUS = value[0];
+  
+  HalLcdWriteStringValue( "change:", MAX_G, 10,  HAL_LCD_LINE_4 );
+  HalLcdWriteStringValue( "change:", G_K, 10,  HAL_LCD_LINE_5 );
+  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
+
   
   if(isChange != 0 ){
     // 1 表示 当前颜色变暗 然后变亮
@@ -272,24 +264,49 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   }
 }
 
+void setValus(uint8 *value,uint8 *value2,uint8 isChange){
+  if(value[0]==92){
+    return;
+  }
+
+  if(value[0] != STATUS){
+    LAST_STATUS = STATUS;
+  }
+  if(temp_value1 == NULL){
+    temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+    temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+  }
+  osal_memcpy( temp_value1, value, (sizeof( uint8 ) * 20)); 
+  osal_memcpy( temp_value2, value2, (sizeof( uint8 ) * 20)); 
+  //如果上个状态是连接状态，并且当前状态不是连接状态 那么把当前状态记录到LastStatus中
+  if(STATUS & STATUS_CONNECTED 
+      && value[0] != STATUS_CONNECTED ){
+        LAST_STATUS = STATUS;
+        return;
+  }
+  changeColorRightNow(value,value2,isChange);
+  
+}
+
 void LedChange(){
   
   all_counter++;
   
-  if(LAST_STATUS & STATUS_CONNECTED || STATUS & STATUS_CONNECTED){
+  if(STATUS & STATUS_CONNECTED){
     if(all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 5){
       //迎宾灯跑完5s 之后，切换到上一个状态
       
-      STATUS = LAST_STATUS;
+      STATUS = temp_value1[0];
+      //HalLcdWriteStringValue( "ssstatus:", STATUS, 10,  HAL_LCD_LINE_7 );
       LAST_STATUS = STATUS_CONNECTED;
       if(STATUS > 0){
         changed = 1;
+        changeColorRightNow(temp_value1,temp_value2,changed);
+        HalLcdWriteStringValue( "statuxxs:", STATUS, 10,  HAL_LCD_LINE_7 );
       }else{
         changed = 3;
       }
-      count = 1;
-      updown = 1; 
-      all_counter=0;
+      //HalLcdWriteStringValue( "status:", STATUS, 10,  HAL_LCD_LINE_7 );
     }
   }else if( STATUS > 0 && all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 20){
       //计时20 s 后关闭灯光
@@ -301,6 +318,8 @@ void LedChange(){
       all_counter=0;
   }
   
+  //HalLcdWriteStringValue( "xxxxxxx:", STATUS, 10,  HAL_LCD_LINE_8 );
+  
   //如果正在状态切换。那么就进行淡入淡出效果
   if(changed == 0){
     //如果手机再充电 那么需要设置事件进行循环驱动变化
@@ -309,7 +328,7 @@ void LedChange(){
        || STATUS & STATUS_POWER_HIGH
        || STATUS & STATUS_CONNECTED){
          
-      
+         
       LED1_Red = MAX_R + count*R_K/COUNTER;
       LED1_Green = MAX_G + count*G_K/COUNTER;
       LED1_Blue = MAX_B + count*B_K/COUNTER;
@@ -317,6 +336,8 @@ void LedChange(){
       LED2_Red = LED1_Red;
       LED2_Green = LED1_Green;
       LED2_Blue = LED1_Blue;
+      
+      //HalLcdWriteStringValue( "xxxxxxx:", LED1_Green, 10,  HAL_LCD_LINE_8 );
 
      
       /*
@@ -381,7 +402,7 @@ void LedChange(){
         if(changed == 3){
           changed = 0;
         }else{
-          changed = 1;
+          changed = 2;
         }
         pwmPulse();
         pwmPulse3();
