@@ -127,7 +127,7 @@
 //RSSI的获取速率
 #define RSSI_RATE                             50
    
-#define RSSI_CHANGE                           -75
+#define RSSI_CHANGE                           -50
 
 
 
@@ -374,7 +374,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
      #else 
       if( osal_snv_read(0x80,20,charValue1) != SUCCESS){
            //进行初始化
-         osal_snv_write(0x80,20,charValue1);
+         //osal_snv_write(0x80,20,charValue1);
+         //HalLcdWriteStringValue( "rece:", osal_snv_write(0x80,20,charValue1), 10,  HAL_LCD_LINE_8 );
          osal_snv_write(0x95,20,charValue2);
       }
      #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -755,7 +756,7 @@ static void rssiRead( int8 newRSSI )
     //HalLcdWriteStringValue( "RSSI：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     if(lastRSSI >= RSSI_CHANGE && newRSSI < RSSI_CHANGE){
       //手机远离
-      dataChange(0,3);
+      //dataChange(0,3);
       HalLcdWriteStringValue( "RSS I ：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }else if(lastRSSI<RSSI_CHANGE && newRSSI >=RSSI_CHANGE ){
       //手机进入
@@ -866,15 +867,17 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
 
       //newValueBuf[0] = 1;
       
-      if(phoneStatus >0){
+      if(phoneStatus >=0){
         newValueBuf[0] = phoneStatus;
-        HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
-        HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
+        //HalLcdWriteStringValue( "change:", newValueBuf[13], 10,  HAL_LCD_LINE_4 );
+        //HalLcdWriteStringValue( "change:", newValueBuf[16], 10,  HAL_LCD_LINE_5 );
       }
        HalLcdWriteStringValue( "status:", newValueBuf[0], 10,  HAL_LCD_LINE_6 );
-      //写入到flash中
-      osal_snv_write(0x80,20,newValueBuf);
-      osal_snv_write(0x80,20,newValueBuf2);
+      if(newValueBuf[0] != 16){
+        //写入到flash中
+        osal_snv_write(0x80,20,newValueBuf);
+        osal_snv_write(0x95,20,newValueBuf2);
+      }
       //改变等颜色
       setValus(newValueBuf,newValueBuf2,isChange);
       LedChange();

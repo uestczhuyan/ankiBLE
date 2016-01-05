@@ -8,6 +8,8 @@
 #include "hal_key.h"
 #include "hal_lcd.h"
 
+#include "osal_snv.h"
+
 
 #define INIT_RGB 255
 
@@ -16,11 +18,13 @@
 #define COUNTER 50
 #define CHANGE_COUNTER 80
 
+
 #define STATUS_POWER_LOW 1
 #define STATUS_POWER_CHARGING 2
 #define STATUS_POWER_HIGH 4     
 #define STATUS_HAS_MSG 8
 #define STATUS_CONNECTED 16
+#define STATUS_SLEEPING 32
 
 
 #define SWITCHQI P0_3
@@ -40,8 +44,8 @@ uint8 STATUS = 0;
 uint8 LAST_STATUS = 0;
 
 char updown = 1,count = 0,changed=0;
-uint8 *temp_value1;
-uint8 *temp_value2;
+//uint8 *temp_value1;
+//uint8 *temp_value2;
 int16 Change_G = 0;
 int16 Change_R = 0;
 int16 Change_B = 0;
@@ -239,6 +243,8 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
     thisValue = value;
     pos = 2; 
   }
+  STATUS = value[0];
+  
   MAX_R = thisValue[pos];
   MAX_G = thisValue[pos+1];
   MAX_B = thisValue[pos+2];
@@ -246,10 +252,9 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
   G_K = (thisValue[pos+4] - thisValue[pos+1]);
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
   
-  STATUS = value[0];
-  
-  HalLcdWriteStringValue( "change:", MAX_G, 10,  HAL_LCD_LINE_4 );
-  HalLcdWriteStringValue( "change:", G_K, 10,  HAL_LCD_LINE_5 );
+
+  HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
+  HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
   HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
 
   
@@ -265,24 +270,34 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
 }
 
 void setValus(uint8 *value,uint8 *value2,uint8 isChange){
-  if(value[0]==92){
+  //if(value[0]==92){
+  //  return;
+  //}
+
+  if(value[0] == STATUS){
     return;
   }
-
-  if(value[0] != STATUS){
-    LAST_STATUS = STATUS;
-  }
-  if(temp_value1 == NULL){
+  LAST_STATUS = STATUS;
+  /*if(temp_value1 == NULL){
     temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
     temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
   }
   osal_memcpy( temp_value1, value, (sizeof( uint8 ) * 20)); 
-  osal_memcpy( temp_value2, value2, (sizeof( uint8 ) * 20)); 
+  osal_memcpy( temp_value2, value2, (sizeof( uint8 ) * 20));
   //如果上个状态是连接状态，并且当前状态不是连接状态 那么把当前状态记录到LastStatus中
   if(STATUS & STATUS_CONNECTED 
       && value[0] != STATUS_CONNECTED ){
+        //HalLcdWriteStringValue( "rece:", osal_snv_write(0x80,20,value), 10,  HAL_LCD_LINE_8 );
         LAST_STATUS = STATUS;
         return;
+  }*/ 
+  
+  //状态转移的问题。  status <=0 那么不能设置颜色  只有当当前状态是存在的某个状态到另外的状态。
+  if(value[0]>0 && value[0]<16 && (LAST_STATUS <= 0 || LAST_STATUS == STATUS_CONNECTED)){
+    HalLcdWriteStringValue( "status:", LAST_STATUS, 10,  HAL_LCD_LINE_1 );
+    HalLcdWriteStringValue( "status:", value[0], 10,  HAL_LCD_LINE_2 );
+    HalLcdWriteStringValue( "status:", value[0], 10,  HAL_LCD_LINE_2 );
+    return;
   }
   changeColorRightNow(value,value2,isChange);
   
@@ -296,8 +311,13 @@ void LedChange(){
     if(all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 5){
       //迎宾灯跑完5s 之后，切换到上一个状态
       
+      uint8 *temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+      uint8 *temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+      osal_snv_read(0x80,20,temp_value1);
+      osal_snv_read(0x95,20,temp_value2);
+      //HalLcdWriteStringValue( "recess:", osal_snv_read(0x80,20,temp_value1), 10,  HAL_LCD_LINE_8 );
       STATUS = temp_value1[0];
-      //HalLcdWriteStringValue( "ssstatus:", STATUS, 10,  HAL_LCD_LINE_7 );
+      HalLcdWriteStringValue( "ssstatus:", STATUS, 10,  HAL_LCD_LINE_7 );
       LAST_STATUS = STATUS_CONNECTED;
       if(STATUS > 0){
         changed = 1;
@@ -311,7 +331,7 @@ void LedChange(){
   }else if( STATUS > 0 && all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 20){
       //计时20 s 后关闭灯光
       LAST_STATUS = STATUS;
-      STATUS = 0;
+      STATUS = STATUS_SLEEPING;
       changed = 3;
       count = 1;
       updown = 1; 
