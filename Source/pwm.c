@@ -269,36 +269,44 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
   }
 }
 
+//状态转移机  状态转移在此完成
 void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   //if(value[0]==92){
   //  return;
   //}
 
+  //当前状态不能在此转移为本身的状态
   if(value[0] == STATUS){
     return;
   }
-  LAST_STATUS = STATUS;
-  /*if(temp_value1 == NULL){
-    temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
-    temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
-  }
-  osal_memcpy( temp_value1, value, (sizeof( uint8 ) * 20)); 
-  osal_memcpy( temp_value2, value2, (sizeof( uint8 ) * 20));
-  //如果上个状态是连接状态，并且当前状态不是连接状态 那么把当前状态记录到LastStatus中
-  if(STATUS & STATUS_CONNECTED 
-      && value[0] != STATUS_CONNECTED ){
-        //HalLcdWriteStringValue( "rece:", osal_snv_write(0x80,20,value), 10,  HAL_LCD_LINE_8 );
-        LAST_STATUS = STATUS;
-        return;
-  }*/ 
   
+  //状态0 只能往 STATUS_CONNECTED 状态转移
+  if(STATUS == 0 && value[0] & STATUS_CONNECTED){      
+  }else{
+    return;
+  }
+  
+  //来的任何数据 都不改变灯光 等待迎宾灯完成后在进行灯光切换
+  if(STATUS & STATUS_CONNECTED){
+    return;
+  }
+  //处于灯光熄灭状态  可以被任何活动状态唤醒
+  if(STATUS & STATUS_SLEEPING && value[0] > 0 && value[0] <16){
+  }else{
+    return;
+  }
+  
+  //当前是活动状态，可以被任何状态替换。
+  LAST_STATUS = STATUS;
+  /*
   //状态转移的问题。  status <=0 那么不能设置颜色  只有当当前状态是存在的某个状态到另外的状态。
   if(value[0]>0 && value[0]<16 && (LAST_STATUS <= 0 || LAST_STATUS == STATUS_CONNECTED)){
     HalLcdWriteStringValue( "status:", LAST_STATUS, 10,  HAL_LCD_LINE_1 );
     HalLcdWriteStringValue( "status:", value[0], 10,  HAL_LCD_LINE_2 );
     HalLcdWriteStringValue( "status:", value[0], 10,  HAL_LCD_LINE_2 );
     return;
-  }
+  }*/
+  
   changeColorRightNow(value,value2,isChange);
   
 }
