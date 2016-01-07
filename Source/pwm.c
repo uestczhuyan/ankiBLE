@@ -319,27 +319,35 @@ void LedChange(){
     if(all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 5){
       //迎宾灯跑完5s 之后，切换到上一个状态
       
-      uint8 *temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
-      uint8 *temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
-      osal_snv_read(0x80,20,temp_value1);
-      osal_snv_read(0x95,20,temp_value2);
-      //HalLcdWriteStringValue( "recess:", osal_snv_read(0x80,20,temp_value1), 10,  HAL_LCD_LINE_8 );
-      STATUS = temp_value1[0];
-      HalLcdWriteStringValue( "ssstatus:", STATUS, 10,  HAL_LCD_LINE_7 );
-      LAST_STATUS = STATUS_CONNECTED;
-      if(STATUS > 0){
-        changed = 1;
-        changeColorRightNow(temp_value1,temp_value2,changed);
-        HalLcdWriteStringValue( "statuxxs:", STATUS, 10,  HAL_LCD_LINE_7 );
+      if(isBlueToothConnected >0){
+        uint8 *temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+        uint8 *temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+        osal_snv_read(0x80,20,temp_value1);
+        osal_snv_read(0x95,20,temp_value2);
+        STATUS = temp_value1[0];
+        //HalLcdWriteStringValue( "ssstatus:", STATUS, 10,  HAL_LCD_LINE_7 );
+        if(STATUS > 0){
+          changed = 1;
+          changeColorRightNow(temp_value1,temp_value2,changed);
+          //HalLcdWriteStringValue( "statuxxs:", STATUS, 10,  HAL_LCD_LINE_7 );
+        }else{
+          changed = 3;
+        }
+      }else if(isBlueToothConnected == -1){
+         STATUS = STATUS_SLEEPING;
       }else{
-        changed = 3;
+        STATUS = 0;
       }
-      //HalLcdWriteStringValue( "status:", STATUS, 10,  HAL_LCD_LINE_7 );
+      LAST_STATUS = STATUS_CONNECTED;
     }
   }else if( STATUS > 0 && all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 20){
       //计时20 s 后关闭灯光
       LAST_STATUS = STATUS;
-      STATUS = STATUS_SLEEPING;
+      if(isBlueToothConnected == -1 || isBlueToothConnected == 1){
+         STATUS = STATUS_SLEEPING;
+      }else{
+        STATUS = 0;
+      }
       changed = 3;
       count = 1;
       updown = 1; 

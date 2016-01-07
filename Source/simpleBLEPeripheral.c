@@ -245,6 +245,7 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
   simpleProfileChangeCB    // Charactersitic value change callback
 };
 
+
 /*********************************************************************
  * PUBLIC FUNCTIONS
  */
@@ -659,6 +660,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         lastRSSI=-100;
         //初始化的时候会调用
         dataChange(0,3);
+        isBlueToothConnected=0;
         //dataChange(1,2);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
@@ -667,7 +669,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
       break;
 
     case GAPROLE_CONNECTED:
-      {        
+      {  
+        isBlueToothConnected = 1;
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Connected",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -688,6 +691,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_CONNECTED_ADV:
       {
+        isBlueToothConnected = 0;
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Connected Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -695,6 +699,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
       break;      
     case GAPROLE_WAITING:
       {
+        isBlueToothConnected = 0;
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Disconnected",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -703,6 +708,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_WAITING_AFTER_TIMEOUT:
       {
+        isBlueToothConnected = 0;
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Timed Out",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -716,6 +722,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_ERROR:
       {
+        isBlueToothConnected = 0;
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Error",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -757,56 +764,17 @@ static void rssiRead( int8 newRSSI )
     if(lastRSSI >= RSSI_CHANGE && newRSSI < RSSI_CHANGE){
       //手机远离
       //dataChange(0,3);
-      HalLcdWriteStringValue( "RSS I ：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+      isBlueToothConnected = -1;
+      //HalLcdWriteStringValue( "RSS I ：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }else if(lastRSSI<RSSI_CHANGE && newRSSI >=RSSI_CHANGE ){
       //手机进入
+      isBlueToothConnected = 1;
       dataChange(16,2);
-      HalLcdWriteStringValue( "RSSIk：", -newRSSI, 10,  HAL_LCD_LINE_8 );
-    }else{
-      HalLcdWriteStringValue( "RSSIo：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+      //HalLcdWriteStringValue( "RSSIk：", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }
     
-    lastRSSI = newRSSI;
-  /*if(lastRSSI != newRSSI){ 
-  }else{
-    HalLcdWriteStringValue( "R SSI ", -newRSSI, 10,  HAL_LCD_LINE_8 );
-  }*/
-  
+    lastRSSI = newRSSI;  
 }
-
-
-/*********************************************************************
- * @fn      performPeriodicTask
- *
- * @brief   Perform a periodic application task. This function gets
- *          called every five seconds as a result of the SBP_PERIODIC_EVT
- *          OSAL event. In this example, the value of the third
- *          characteristic in the SimpleGATTProfile service is retrieved
- *          from the profile, and then copied into the value of the
- *          the fourth characteristic.
- *
- * @param   none
- *
- * @return  none
- */
-
-/*static void performPeriodicTask( void )
-{
-  uint8 valueToCopy;
-  uint8 stat;
-
-  // Call to retrieve the value of the third characteristic in the profile
-  stat = SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &valueToCopy);
-
-  if( stat == SUCCESS )
-  {
-     // Call to set that value of the fourth characteristic in the profile. Note
-     // that if notifications of the fourth characteristic have been enabled by
-     // a GATT client device, then a notification will be sent every time this
-     // function is called.
-    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
-  }
-}*/
 
 
 /*********************************************************************

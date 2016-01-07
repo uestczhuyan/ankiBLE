@@ -70,6 +70,9 @@ extern "C"
  */
 static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
 
+//蓝牙是否是连接状态 1表示蓝牙连接，0 表示蓝牙断开，-1 表示蓝牙在迎宾灯范围外面
+static int8 isBlueToothConnected = 0;
+
 /*********************************************************************
  * FUNCTIONS
  */
