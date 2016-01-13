@@ -89,6 +89,8 @@ extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
    
 void setLED_EVT(uint8 value);
 
+extern int8 getBlueToothStatus();
+
 /*********************************************************************
 *********************************************************************/
 

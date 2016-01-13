@@ -281,34 +281,27 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   }
   
   //状态0 只能往 STATUS_CONNECTED 状态转移
-  if(STATUS == 0 && value[0] & STATUS_CONNECTED){      
+  if(STATUS == 0 && value[0] & STATUS_CONNECTED){
+     LAST_STATUS = STATUS;
+     changeColorRightNow(value,value2,isChange);
+     HalLcdWriteStringValue( "connected1:", value[0], 10,  HAL_LCD_LINE_1 );
+     return;
   }else{
-    return;
+     HalLcdWriteStringValue( "connected1-:", value[0], 10,  HAL_LCD_LINE_1 );
   }
   
   //来的任何数据 都不改变灯光 等待迎宾灯完成后在进行灯光切换
   if(STATUS & STATUS_CONNECTED){
+    HalLcdWriteStringValue( "connected2:", value[0], 10,  HAL_LCD_LINE_8 );
     return;
   }
   //处于灯光熄灭状态  可以被任何活动状态唤醒
   if(STATUS & STATUS_SLEEPING && value[0] > 0 && value[0] <16){
-  }else{
-    return;
+    //当前是活动状态，可以被任何状态替换。
+    LAST_STATUS = STATUS;
+    changeColorRightNow(value,value2,isChange);
   }
-  
-  //当前是活动状态，可以被任何状态替换。
-  LAST_STATUS = STATUS;
-  /*
-  //状态转移的问题。  status <=0 那么不能设置颜色  只有当当前状态是存在的某个状态到另外的状态。
-  if(value[0]>0 && value[0]<16 && (LAST_STATUS <= 0 || LAST_STATUS == STATUS_CONNECTED)){
-    HalLcdWriteStringValue( "status:", LAST_STATUS, 10,  HAL_LCD_LINE_1 );
-    HalLcdWriteStringValue( "status:", value[0], 10,  HAL_LCD_LINE_2 );
-    HalLcdWriteStringValue( "status:", value[0], 10,  HAL_LCD_LINE_2 );
-    return;
-  }*/
-  
-  changeColorRightNow(value,value2,isChange);
-  
+ 
 }
 
 void LedChange(){
@@ -319,7 +312,8 @@ void LedChange(){
     if(all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 5){
       //迎宾灯跑完5s 之后，切换到上一个状态
       
-      if(isBlueToothConnected >0){
+      HalLcdWriteStringValue( "BTS:", getBlueToothStatus(), 10,  HAL_LCD_LINE_7 );
+      if(getBlueToothStatus() >0){
         uint8 *temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
         uint8 *temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
         osal_snv_read(0x80,20,temp_value1);
@@ -333,7 +327,7 @@ void LedChange(){
         }else{
           changed = 3;
         }
-      }else if(isBlueToothConnected == -1){
+      }else if(getBlueToothStatus() == -1){
          STATUS = STATUS_SLEEPING;
       }else{
         STATUS = 0;
@@ -343,7 +337,7 @@ void LedChange(){
   }else if( STATUS > 0 && all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 20){
       //计时20 s 后关闭灯光
       LAST_STATUS = STATUS;
-      if(isBlueToothConnected == -1 || isBlueToothConnected == 1){
+      if(getBlueToothStatus() == -1 || getBlueToothStatus() == 1){
          STATUS = STATUS_SLEEPING;
       }else{
         STATUS = 0;

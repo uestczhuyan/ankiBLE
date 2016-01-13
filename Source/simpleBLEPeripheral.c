@@ -855,6 +855,10 @@ void setLED_EVT(uint8 value){
   osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, value );
 }
 
+int8 getBlueToothStatus(){
+  return isBlueToothConnected;
+}
+
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 /*********************************************************************
  * @fn      bdAddr2Str
