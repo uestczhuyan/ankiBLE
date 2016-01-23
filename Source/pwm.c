@@ -144,7 +144,7 @@ void PWM_init()
   P0SEL &=~0X08;
   
   
-  initRedLine();
+  //initRedLine();
  
   
   //Timer4_init();
@@ -253,9 +253,9 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
   B_K = (thisValue[pos+5] - thisValue[pos+2]);
   
 
-  HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
-  HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
-  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_6 );
+  //HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
+  //HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
+  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_5 );
 
   
   if(isChange != 0 ){

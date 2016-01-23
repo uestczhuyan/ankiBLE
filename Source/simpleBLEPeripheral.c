@@ -152,6 +152,7 @@
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
 
 static int8 lastRSSI = -100;
+static uint8 redLine = 0;
 
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
@@ -488,7 +489,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Set timer for first periodic event
     //init LED
     PWM_init();
-    init_QI_Switch(1);
+    init_QI_Switch(0);
     //dataChange(1,0);
     
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
@@ -500,19 +501,26 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   {
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
-    
-    
     if(P1_6 == 1){
-        HalLcdWriteString("HEIGH",HAL_LCD_LINE_1);
+        HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
         init_QI_Switch(1);
+        osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_REDLINE_EVT,SBP_LINE_EVT_PERIOD);
+        redLine=1;
     }else{
-        init_QI_Switch(0);
-        HalLcdWriteString("LOW",HAL_LCD_LINE_1);
+        HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
+        redLine=0;
     }
 
     LedChange();
     return (events ^ SBP_PERIODIC_EVT);
   }
+  
+  if ( events & SBP_REDLINE_EVT ){
+      if(redLine == 0){
+        init_QI_Switch(0);
+      }
+      return (events ^ SBP_REDLINE_EVT);
+   }
 
   // Discard unknown events
   return 0;

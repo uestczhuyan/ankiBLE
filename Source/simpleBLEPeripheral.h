@@ -58,9 +58,13 @@ extern "C"
 #define SBP_START_DEVICE_EVT                              0x0001
 // LED 相关事件
 #define SBP_PERIODIC_EVT                                  0x0002
- 
+// 红外事件
+#define SBP_REDLINE_EVT                                  0x0004
+  
 //LED change interval , 50fps
 #define SBP_PERIODIC_EVT_PERIOD                   40 
+// 红外灯光延时
+#define SBP_LINE_EVT_PERIOD                   5000
 
 /*********************************************************************
  * MACROS
