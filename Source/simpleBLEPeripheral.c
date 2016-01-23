@@ -127,7 +127,7 @@
 //RSSI的获取速率
 #define RSSI_RATE                             50
    
-#define RSSI_CHANGE                           -50
+#define RSSI_CHANGE                           -70
 
 
 
@@ -501,10 +501,13 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
     
-    if(P1_1 == 1){
-        //HalLcdWriteString("HEIGH",HAL_LCD_LINE_4);
+    
+    if(P1_6 == 1){
+        HalLcdWriteString("HEIGH",HAL_LCD_LINE_1);
+        init_QI_Switch(1);
     }else{
-        //HalLcdWriteString("LOW",HAL_LCD_LINE_4);
+        init_QI_Switch(0);
+        HalLcdWriteString("LOW",HAL_LCD_LINE_1);
     }
 
     LedChange();

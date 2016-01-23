@@ -29,7 +29,7 @@
 
 #define SWITCHQI P0_3
 
-#define HAL_RED_LINE_PIN       1
+#define HAL_RED_LINE_PIN       6
 
 #define DARK_RGB  255
 
@@ -138,13 +138,13 @@ void PWM_init()
   Timer1_init();
   
   //Timer3_init();
-  
+    
   //把2.0 脚设置为 QI开关电路
   P0DIR |= 0X08;
   P0SEL &=~0X08;
   
   
-  //initRedLine();
+  initRedLine();
  
   
   //Timer4_init();
