@@ -144,7 +144,7 @@ void PWM_init()
   P0SEL &=~0X08;
   
   
-  //initRedLine();
+  initRedLine();
  
   
   //Timer4_init();
@@ -276,7 +276,7 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   //}
 
   //当前状态不能在此转移为本身的状态
-  if(value[0] == STATUS){
+  if(value[0] == STATUS &&  STATUS >= 16 ){
     return;
   }
   
@@ -284,10 +284,10 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   if(STATUS == 0 && value[0] & STATUS_CONNECTED){
      LAST_STATUS = STATUS;
      changeColorRightNow(value,value2,isChange);
-     HalLcdWriteStringValue( "connected1:", value[0], 10,  HAL_LCD_LINE_1 );
+     HalLcdWriteStringValue( "connected1:", value[0], 10,  HAL_LCD_LINE_8 );
      return;
   }else{
-     HalLcdWriteStringValue( "connected1-:", value[0], 10,  HAL_LCD_LINE_1 );
+     HalLcdWriteStringValue( "connected1-:", value[0], 10,  HAL_LCD_LINE_8 );
   }
   
   //来的任何数据 都不改变灯光 等待迎宾灯完成后在进行灯光切换
@@ -297,9 +297,19 @@ void setValus(uint8 *value,uint8 *value2,uint8 isChange){
   }
   //处于灯光熄灭状态  可以被任何活动状态唤醒
   if(STATUS & STATUS_SLEEPING && value[0] > 0 && value[0] <16){
+    HalLcdWriteStringValue( "connected3:", value[0], 10,  HAL_LCD_LINE_8 );
     //当前是活动状态，可以被任何状态替换。
     LAST_STATUS = STATUS;
     changeColorRightNow(value,value2,isChange);
+    return;
+  }
+  
+  if( STATUS > 0 && STATUS <16){
+    //当前是活动状态，可以被任何状态替换。
+    HalLcdWriteStringValue( "connected4:", value[0], 10,  HAL_LCD_LINE_8 );
+    LAST_STATUS = STATUS;
+    changeColorRightNow(value,value2,isChange);
+    return;
   }
  
 }

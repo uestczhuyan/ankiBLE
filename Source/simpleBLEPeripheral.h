@@ -64,7 +64,7 @@ extern "C"
 //LED change interval , 50fps
 #define SBP_PERIODIC_EVT_PERIOD                   40 
 // ∫ÏÕ‚µ∆π‚—” ±
-#define SBP_LINE_EVT_PERIOD                   5000
+#define SBP_LINE_EVT_PERIOD                   10000
 
 /*********************************************************************
  * MACROS

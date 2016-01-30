@@ -502,12 +502,12 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
     if(P1_6 == 1){
-        HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
+        //HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
         init_QI_Switch(1);
         osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_REDLINE_EVT,SBP_LINE_EVT_PERIOD);
         redLine=1;
     }else{
-        HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
+        //HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
         redLine=0;
     }
 
@@ -830,7 +830,7 @@ static void simpleProfileChangeCB( uint8 paramID )
 * phoneStatus = -1 表示读取到了characteristic2 的数组值。
 */
 static void dataChange(int8 phoneStatus,uint8 isChange){
-      HalLcdWriteStringValue( "phoneStatus +：", phoneStatus, 10,  HAL_LCD_LINE_7 );
+
       uint8 newValueBuf[20]={0};
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, newValueBuf );
    
@@ -840,7 +840,12 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
         init_QI_Switch(newValueBuf[1]);
         return;
       }
-      
+      if(phoneStatus == -2 && newValueBuf[0]==0){
+        HalLcdWriteStringValue( "phoneS-:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
+        return;
+      }
+      HalLcdWriteStringValue( "phoneS+:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
+      HalLcdWriteStringValue( "phoneS+:", newValueBuf[2], 10,  HAL_LCD_LINE_2 );
       uint8 newValueBuf2[20]={0};
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
 
