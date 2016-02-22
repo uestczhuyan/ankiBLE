@@ -21,4 +21,6 @@ void LedChange();
 
 void init_QI_Switch(int8 on);
 
+void init_RedLine_Switch(int8 on);
+
 #endif

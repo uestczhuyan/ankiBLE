@@ -27,9 +27,10 @@
 #define STATUS_SLEEPING 32
 
 
-#define SWITCHQI P0_3
+#define SWITCHQI P0_2
+#define SWITCHLight P0_3
 
-#define HAL_RED_LINE_PIN       6
+#define HAL_RED_LINE_PIN       4
 
 #define DARK_RGB  255
 
@@ -127,9 +128,17 @@ void init_QI_Switch(int8 on){
   }
 }
 
+void init_RedLine_Switch(int8 on){
+  if(on > 0){
+    SWITCHLight = 1;
+  }else{
+    SWITCHLight = 0;
+  }
+}
+
 void initRedLine(){
-  P1DIR &= ~BV(HAL_RED_LINE_PIN);  //输入，外设
-  P1SEL &= ~BV(HAL_RED_LINE_PIN);
+  P0DIR &= ~BV(HAL_RED_LINE_PIN);  //输入，外设
+  P0SEL &= ~BV(HAL_RED_LINE_PIN);
 }
 
 void PWM_init()
@@ -137,16 +146,17 @@ void PWM_init()
   
   Timer1_init();
   
-  //Timer3_init();
+  Timer3_init();
     
-  //把2.0 脚设置为 QI开关电路
-  P0DIR |= 0X08;
-  P0SEL &=~0X08;
-  
-  
   initRedLine();
- 
   
+  //把2.0 脚设置为 QI开关电路
+  P0DIR |=0X2C;
+  P0SEL &=~0X2C;
+  //P0_3=0;
+  //P0_2=0;
+  //P0_5=0;
+
   //Timer4_init();
   
   EA=1;
