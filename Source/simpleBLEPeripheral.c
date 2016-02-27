@@ -41,22 +41,25 @@
  * INCLUDES
  */
 
+
+
 #include "bcomdef.h"
 #include "OSAL.h"
 #include "OSAL_PwrMgr.h"
-
 #include "OnBoard.h"
 #include "hal_adc.h"
 #include "hal_led.h"
 #include "hal_key.h"
 #include "hal_lcd.h"
-
+#include "ll.h"
+#include "linkdb.h"
 #include "gatt.h"
 
 #include "hci.h"
 
 #include "gapgattserver.h"
 #include "gattservapp.h"
+#include "gatt_profile_uuid.h"
 #include "devinfoservice.h"
 #include "simpleGATTprofile.h"
 
@@ -65,18 +68,15 @@
 #endif
 
 #include "peripheral.h"
-
 #include "gapbondmgr.h"
-
 #include "simpleBLEPeripheral.h"
 #include "osal_snv.h"
-
 #if defined FEATURE_OAD
   #include "oad.h"
   #include "oad_target.h"
 #endif
-
 #include "pwm.h"
+#include "battservice.h"
 
 /*********************************************************************
  * MACROS
@@ -192,10 +192,16 @@ static uint8 advertData[] =
 
   // service UUID, to notify central devices what services are included
   // in this peripheral
-  0x03,   // length of this data
-  GAP_ADTYPE_16BIT_MORE,      // some of the UUID's, but not all
+  0x09,   // length of this data
+  GAP_ADTYPE_SERVICES_LIST_16BIT,      // some of the UUID's, but not all
   LO_UINT16( SIMPLEPROFILE_SERV_UUID ),
   HI_UINT16( SIMPLEPROFILE_SERV_UUID ),
+  LO_UINT16(CURRENT_TIME_SERV_UUID),
+  HI_UINT16(CURRENT_TIME_SERV_UUID),
+  LO_UINT16(ALERT_NOTIF_SERV_UUID),
+  HI_UINT16(ALERT_NOTIF_SERV_UUID),
+  LO_UINT16(BATT_SERV_UUID),
+  HI_UINT16(BATT_SERV_UUID)
 
 };
 
@@ -659,8 +665,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           // Display device address
-          HalLcdWriteString( bdAddr2Str( ownAddress ),  HAL_LCD_LINE_2 );
-          HalLcdWriteString( "Initialized",  HAL_LCD_LINE_3 );
+          //HalLcdWriteString( bdAddr2Str( ownAddress ),  HAL_LCD_LINE_2 );
+          //HalLcdWriteString( "Initialized",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
       }
       break;
@@ -844,8 +850,8 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
         HalLcdWriteStringValue( "phoneS-:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
         return;
       }
-      HalLcdWriteStringValue( "phoneS+:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
-      HalLcdWriteStringValue( "phoneS+:", newValueBuf[2], 10,  HAL_LCD_LINE_2 );
+      //HalLcdWriteStringValue( "phoneS+:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
+      //HalLcdWriteStringValue( "phoneS+:", newValueBuf[2], 10,  HAL_LCD_LINE_2 );
       uint8 newValueBuf2[20]={0};
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
 

@@ -1533,6 +1533,7 @@
           <state>$PROJ_DIR$\..\..\Profiles\Roles</state>
           <state>$PROJ_DIR$\..\..\Profiles\SimpleProfile</state>
           <state>$PROJ_DIR$\..\..\Profiles\DevInfo</state>
+          <state>$PROJ_DIR$\..\..\Profiles\Batt</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -8722,6 +8723,9 @@
     <name>INCLUDE</name>
     <file>
       <name>$PROJ_DIR$\..\..\..\..\Components\ble\include\att.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\Profiles\Batt\battservice.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\..\..\Components\ble\include\gap.h</name>
