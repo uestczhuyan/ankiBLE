@@ -60,6 +60,8 @@ extern "C"
 #define SBP_PERIODIC_EVT                                  0x0002
 // 红外事件
 #define SBP_REDLINE_EVT                                  0x0004
+//IOS ANSC 事件
+#define START_DISCOVERY_EVT                           0x0008
   
 //LED change interval , 50fps
 #define SBP_PERIODIC_EVT_PERIOD                   40 

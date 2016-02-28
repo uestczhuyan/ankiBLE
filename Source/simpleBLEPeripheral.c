@@ -128,6 +128,8 @@
 #define RSSI_RATE                             50
    
 #define RSSI_CHANGE                           -70
+//IOS ANSC 开始延时
+#define DEFAULT_DISCOVERY_DELAY               1000
 
 
 
@@ -360,8 +362,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof( uint8 ), &bonding );
   }
   
+   // Initialize GATT Client
+  VOID GATT_InitClient();
   
-
+  // Register to receive incoming ATT Indications/Notifications
+  GATT_RegisterForInd(simpleBLEPeripheral_TaskID);
+  
   // Initialize GATT attributes 添加了4个Service 服务
   GGS_AddService( GATT_ALL_SERVICES );            // GAP
   GATTServApp_AddService( GATT_ALL_SERVICES );    // GATT attributes
@@ -545,6 +551,20 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
       }
       return (events ^ SBP_REDLINE_EVT);
    }
+  
+  if ( events & START_DISCOVERY_EVT )
+  {
+    if ( timeAppPairingStarted )
+    {
+      // Postpone discovery until pairing completes
+      timeAppDiscPostponed = TRUE;
+    }
+    else
+    {
+       //timeAppDiscStart();
+    }  
+    return ( events ^ START_DISCOVERY_EVT );
+  }
 
   // Discard unknown events
   return 0;
@@ -709,6 +729,30 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Connected",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+		
+		linkDBItem_t  *pItem;
+		// Get connection handle
+		GAPRole_GetParameter( GAPROLE_CONNHANDLE, &timeAppConnHandle );
+		// Get peer bd address
+		if ( (pItem = linkDB_Find( timeAppConnHandle )) != NULL)
+		{
+		  // If connected to device without bond do service discovery
+		  if ( !osal_memcmp( pItem->addr, timeAppBondedAddr, B_ADDR_LEN ) )
+		  {
+			timeAppDiscoveryCmpl = FALSE;
+		  }
+		  
+		  // Initiate service discovery if necessary
+		  if ( timeAppDiscoveryCmpl == FALSE )
+		  {
+			osal_start_timerEx( simpleBLEPeripheral_TaskID, START_DISCOVERY_EVT, DEFAULT_DISCOVERY_DELAY );
+		  }
+		  // Perform configuration of characteristics on connection setup
+		  else
+		  {
+			//timeAppConfigState = timeAppConfigNext( TIMEAPP_CONFIG_CONN_START );
+		  }
+		}
           
 #ifdef PLUS_BROADCASTER
         // Only turn advertising on for this state when we first connect
