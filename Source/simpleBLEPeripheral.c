@@ -153,6 +153,18 @@ static gaprole_States_t gapProfileState = GAPROLE_INIT;
 
 static int8 lastRSSI = -100;
 static uint8 redLine = 0;
+// TRUE if pairing started
+static uint8 timeAppPairingStarted = FALSE;
+// Connection handle
+uint16 timeAppConnHandle;
+// Bonded state
+static bool timeAppBonded = FALSE;
+// Bonded peer address
+static uint8 timeAppBondedAddr[B_ADDR_LEN];
+// TRUE if discovery postponed due to pairing
+static uint8 timeAppDiscPostponed = FALSE;
+// Service discovery complete
+static uint8 timeAppDiscoveryCmpl = FALSE;
 
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
@@ -218,6 +230,10 @@ static void rssiRead(int8 newRSSI);
 //static void performLEDTask( void );
 static void dataChange(int8 phoneStatus,uint8 isChange);
 static void simpleProfileChangeCB( uint8 paramID );
+static void timeAppPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
+                                        uint8 uiInputs, uint8 uiOutputs );
+static void timeAppPairStateCB( uint16 connHandle, uint8 state, uint8 status );
+
 
 #if defined( CC2540_MINIDK )
 static void simpleBLEPeripheral_HandleKeys( uint8 shift, uint8 keys );
@@ -242,8 +258,8 @@ static gapRolesCBs_t simpleBLEPeripheral_PeripheralCBs =
 // GAP Bond Manager Callbacks
 static gapBondCBs_t simpleBLEPeripheral_BondMgrCBs =
 {
-  NULL,                     // Passcode callback (not used by application)
-  NULL                      // Pairing / Bonding state Callback (not used by application)
+  timeAppPasscodeCB,                     // Passcode callback (not used by application)
+  timeAppPairStateCB                      // Pairing / Bonding state Callback (not used by application)
 };
 
 // Simple GATT Profile Callbacks
@@ -332,17 +348,19 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the GAP Bond Manager
   {
-    uint32 passkey = 0; // passkey "000000"
-    uint8 pairMode = GAPBOND_PAIRING_MODE_WAIT_FOR_REQ;
-    uint8 mitm = TRUE;
+    uint32 passkey = 0;
+    uint8 pairMode = GAPBOND_PAIRING_MODE_INITIATE;
+    uint8 mitm = FALSE;
     uint8 ioCap = GAPBOND_IO_CAP_DISPLAY_ONLY;
     uint8 bonding = TRUE;
-    GAPBondMgr_SetParameter( GAPBOND_DEFAULT_PASSCODE, sizeof ( uint32 ), &passkey );
-    GAPBondMgr_SetParameter( GAPBOND_PAIRING_MODE, sizeof ( uint8 ), &pairMode );
-    GAPBondMgr_SetParameter( GAPBOND_MITM_PROTECTION, sizeof ( uint8 ), &mitm );
-    GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof ( uint8 ), &ioCap );
-    GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
+    GAPBondMgr_SetParameter( GAPBOND_DEFAULT_PASSCODE, sizeof( uint32 ), &passkey );
+    GAPBondMgr_SetParameter( GAPBOND_PAIRING_MODE, sizeof( uint8 ), &pairMode );
+    GAPBondMgr_SetParameter( GAPBOND_MITM_PROTECTION, sizeof( uint8 ), &mitm );
+    GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof( uint8 ), &ioCap );
+    GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof( uint8 ), &bonding );
   }
+  
+  
 
   // Initialize GATT attributes 添加了4个Service 服务
   GGS_AddService( GATT_ALL_SERVICES );            // GAP
@@ -842,7 +860,7 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
    
       //只读取到数组1的数据，先不改变灯光只记录下来，等数组2的数据被读到后才进行灯光改变的操作。
       if(phoneStatus == -2){
-        //HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_3 );
+        HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_4 );
         init_QI_Switch(newValueBuf[1]);
         return;
       }
@@ -879,6 +897,85 @@ void setLED_EVT(uint8 value){
 
 int8 getBlueToothStatus(){
   return isBlueToothConnected;
+}
+
+static void timeAppPairStateCB( uint16 connHandle, uint8 state, uint8 status )
+{
+  if ( state == GAPBOND_PAIRING_STATE_STARTED )
+  {
+    timeAppPairingStarted = TRUE;
+    
+    HalLcdWriteStringValue( "Pairing started",1, 10, HAL_LCD_LINE_1 );
+  }
+  else if ( state == GAPBOND_PAIRING_STATE_COMPLETE )
+  {
+    timeAppPairingStarted = FALSE;
+
+    if ( status == SUCCESS )
+    {
+      linkDBItem_t  *pItem;
+      
+      if ( (pItem = linkDB_Find( timeAppConnHandle )) != NULL )
+      {
+        // Store bonding state of pairing
+        timeAppBonded = ( (pItem->stateFlags & LINK_BOUND) == LINK_BOUND );
+        
+        if ( timeAppBonded )
+        {
+          osal_memcpy( timeAppBondedAddr, pItem->addr, B_ADDR_LEN );
+        }
+      }
+      
+      // If discovery was postponed start discovery
+      if ( timeAppDiscPostponed && timeAppDiscoveryCmpl == FALSE )
+      {
+        timeAppDiscPostponed = FALSE;
+        //osal_set_event( simpleBLEPeripheral_TaskID, START_DISCOVERY_EVT );
+      }
+      
+      HalLcdWriteStringValue( "Pairing success",1, 10, HAL_LCD_LINE_1 );
+    }
+    else
+    {
+      HalLcdWriteStringValue( "Pairing fail", status, 10, HAL_LCD_LINE_1 );
+    }
+  }
+  else if ( state == GAPBOND_PAIRING_STATE_BONDED )
+  {
+    if ( status == SUCCESS )
+    {
+      HalLcdWriteStringValue( "Bonding success",1, 10, HAL_LCD_LINE_1 );
+    }
+  }
+}
+
+/*********************************************************************
+ * @fn      timeAppPasscodeCB
+ *
+ * @brief   Passcode callback.
+ *
+ * @return  none
+ */
+static void timeAppPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
+                                        uint8 uiInputs, uint8 uiOutputs )
+{
+#if (HAL_LCD == TRUE)
+
+  uint32  passcode;
+
+  // Create random passcode
+  LL_Rand( ((uint8 *) &passcode), sizeof( uint32 ) );
+  passcode %= 1000000;
+  
+  // Display passcode to user
+  if ( uiOutputs != 0 )
+  {
+    HalLcdWriteStringValue( "Passcode:", 1, 10, HAL_LCD_LINE_1 );
+  }
+  
+  // Send passcode response
+  GAPBondMgr_PasscodeRsp( connectionHandle, SUCCESS, passcode );
+#endif
 }
 
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
