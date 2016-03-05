@@ -148,11 +148,11 @@ void PWM_init()
   
   Timer3_init();
     
-  initRedLine();
+  //initRedLine();
   
   //把2.0 脚设置为 QI开关电路
-  P0DIR |=0X2C;
-  P0SEL &=~0X2C;
+  //P0DIR |=0X2C;
+  //P0SEL &=~0X2C;
   //P0_3=0;
   //P0_2=0;
   //P0_5=0;
@@ -242,13 +242,16 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
     pos = 8;
   }else if(value[0] & STATUS_POWER_CHARGING){
     thisValue = value;
-    pos = 14;
+    pos = 8;
   }else if(value[0] & STATUS_POWER_HIGH){
     pos = 0;
     thisValue = value2;
   }else if(value[0] & STATUS_HAS_MSG){
     pos = 6;
     thisValue = value2;
+  }else if(value[0] & STATUS_SLEEPING){
+    thisValue = value;
+    pos = 8; 
   }else{
     thisValue = value;
     pos = 2; 
@@ -265,7 +268,7 @@ void changeColorRightNow(uint8 *value,uint8 *value2,uint8 isChange){
 
   //HalLcdWriteStringValue( "change:", MAX_R, 10,  HAL_LCD_LINE_4 );
   //HalLcdWriteStringValue( "change:", R_K, 10,  HAL_LCD_LINE_5 );
-  HalLcdWriteStringValue( "pos: ", value[0], 10,  HAL_LCD_LINE_5 );
+  HalLcdWriteStringValue( "pos: ", pos, 10,  HAL_LCD_LINE_4 );
 
   
   if(isChange != 0 ){
@@ -343,9 +346,11 @@ void LedChange(){
         if(STATUS > 0){
           changed = 1;
           changeColorRightNow(temp_value1,temp_value2,changed);
-          //HalLcdWriteStringValue( "statuxxs:", STATUS, 10,  HAL_LCD_LINE_7 );
+          HalLcdWriteStringValue( "statuxxs:", STATUS, 10,  HAL_LCD_LINE_7 );
         }else{
-          changed = 3;
+          temp_value1[0] = STATUS_SLEEPING;
+          changeColorRightNow(temp_value1,temp_value2,changed);
+          changed = 1;
         }
       }else if(getBlueToothStatus() == -1){
          STATUS = STATUS_SLEEPING;
@@ -356,16 +361,34 @@ void LedChange(){
     }
   }else if( STATUS > 0 && all_counter > 1000/SBP_PERIODIC_EVT_PERIOD * 20){
       //计时20 s 后关闭灯光
+    if(STATUS == STATUS_SLEEPING){
+      all_counter=0;
+      HalLcdWriteStringValue( "BTSSS:", getBlueToothStatus(), 10,  HAL_LCD_LINE_7 );
+      if(getBlueToothStatus() != 1){
+         changed = 3;
+         HalLcdWriteStringValue( "close:", getBlueToothStatus(), 10,  HAL_LCD_LINE_7 );
+         STATUS= 0;
+      }
+    }else{
+
       LAST_STATUS = STATUS;
-      if(getBlueToothStatus() == -1 || getBlueToothStatus() == 1){
+      if( getBlueToothStatus() == 1){
          STATUS = STATUS_SLEEPING;
+         uint8 *temp_value1=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+        uint8 *temp_value2=(uint8 *)osal_mem_alloc( sizeof( uint8 ) * 20);
+        osal_snv_read(0x80,20,temp_value1);
+        osal_snv_read(0x95,20,temp_value2);
+         temp_value1[0]=STATUS;
+         changeColorRightNow(temp_value1,temp_value2,changed);
       }else{
         STATUS = 0;
+        changed = 3;
       }
-      changed = 3;
+      
       count = 1;
       updown = 1; 
       all_counter=0;
+    }
   }
   
   //HalLcdWriteStringValue( "xxxxxxx:", STATUS, 10,  HAL_LCD_LINE_8 );
@@ -376,7 +399,8 @@ void LedChange(){
     if(STATUS & STATUS_POWER_LOW
        || STATUS & STATUS_POWER_CHARGING
        || STATUS & STATUS_POWER_HIGH
-       || STATUS & STATUS_CONNECTED){
+       || STATUS & STATUS_CONNECTED
+       || STATUS & STATUS_SLEEPING){
          
          
       LED1_Red = MAX_R + count*R_K/COUNTER;

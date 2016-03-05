@@ -380,7 +380,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   // Setup the SimpleProfile Characteristic Values
   {
     //初始化编译进去的灯光颜色
-    uint8 charValue1[20] = {0, 1,255,100,100,255,255,255,   20,1,1,255,1,200,    20,100,100,20,100,10};
+    uint8 charValue1[20] = {0, 1,100,100,100,255,255,255,   255,200,255,255,250,100,    20,100,100,20,100,10};
     uint8 charValue2[20] = {20,1,1,20,1,1,20,1,250,20,1,250,20,1,250,20,1,250,1};
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
@@ -844,12 +844,12 @@ static void rssiRead( int8 newRSSI )
       //手机远离
       //dataChange(0,3);
       isBlueToothConnected = -1;
-      //HalLcdWriteStringValue( "RSS I ：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+      HalLcdWriteStringValue( "RSS I ,", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }else if(lastRSSI<RSSI_CHANGE && newRSSI >=RSSI_CHANGE ){
       //手机进入
       isBlueToothConnected = 1;
       dataChange(16,2);
-      //HalLcdWriteStringValue( "RSSIk：", -newRSSI, 10,  HAL_LCD_LINE_8 );
+      HalLcdWriteStringValue( "RSSIk,", -newRSSI, 10,  HAL_LCD_LINE_8 );
     }
     
     lastRSSI = newRSSI;  
@@ -904,20 +904,11 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
    
       //只读取到数组1的数据，先不改变灯光只记录下来，等数组2的数据被读到后才进行灯光改变的操作。
       if(phoneStatus == -2){
-        HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_4 );
+        HalLcdWriteStringValue( "Char 1:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
         init_QI_Switch(newValueBuf[1]);
-        return;
       }
-      if(phoneStatus == -2 && newValueBuf[0]==0){
-        HalLcdWriteStringValue( "phoneS-:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
-        return;
-      }
-      //HalLcdWriteStringValue( "phoneS+:", newValueBuf[0], 10,  HAL_LCD_LINE_1 );
-      //HalLcdWriteStringValue( "phoneS+:", newValueBuf[2], 10,  HAL_LCD_LINE_2 );
-      uint8 newValueBuf2[20]={0};
-      SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
-
-      //newValueBuf[0] = 1;
+      //uint8 newValueBuf2[20]={0};
+      //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, newValueBuf2 );
       
       if(phoneStatus >=0){
         newValueBuf[0] = phoneStatus;
@@ -928,8 +919,10 @@ static void dataChange(int8 phoneStatus,uint8 isChange){
       if(newValueBuf[0] != 16){
         //写入到flash中
         osal_snv_write(0x80,20,newValueBuf);
-        osal_snv_write(0x95,20,newValueBuf2);
+        //osal_snv_write(0x95,20,newValueBuf2);
       }
+      uint8 newValueBuf2[20]={0};
+      osal_snv_write(0x95,20,newValueBuf2);
       //改变等颜色
       setValus(newValueBuf,newValueBuf2,isChange);
       LedChange();

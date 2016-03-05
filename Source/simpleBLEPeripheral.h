@@ -64,7 +64,7 @@ extern "C"
 #define START_DISCOVERY_EVT                           0x0008
   
 //LED change interval , 50fps
-#define SBP_PERIODIC_EVT_PERIOD                   40 
+#define SBP_PERIODIC_EVT_PERIOD                   20 
 // ∫ÏÕ‚µ∆π‚—” ±
 #define SBP_LINE_EVT_PERIOD                   10000
 
