@@ -8592,6 +8592,15 @@
     <file>
       <name>$PROJ_DIR$\..\Source\SimpleBLEPeripheral_Main.c</name>
     </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\timeapp_config.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\timeapp_discovery.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\timeapp_ind.c</name>
+    </file>
   </group>
   <group>
     <name>HAL</name>

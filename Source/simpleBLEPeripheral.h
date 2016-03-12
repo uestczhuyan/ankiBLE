@@ -40,6 +40,8 @@
 #ifndef SIMPLEBLEPERIPHERAL_H
 #define SIMPLEBLEPERIPHERAL_H
 
+#include "gatt.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -68,16 +70,66 @@ extern "C"
 // 红外灯光延时
 #define SBP_LINE_EVT_PERIOD                   10000
 
+  
+  
+  enum
+{
+  DISC_IDLE = 0x00,                       // Idle state
+  
+  DISC_CURR_TIME_START = 0x10,            // Current time service
+  DISC_CURR_TIME_SVC,                     // Discover service
+  DISC_CURR_TIME_CHAR,                    // Discover all characteristics
+  DISC_CURR_TIME_CT_TIME_CCCD,            // Discover CT time CCCD
+
+
+  DISC_BATT_START = 0x20,                 // Battery service
+  DISC_BATT_SVC,                          // Discover service
+  DISC_BATT_CHAR,                         // Discover all characteristics
+  DISC_BATT_LVL_CCCD,                     // Discover battery level CCCD
+  
+  DISC_FAILED = 0xFF                      // Discovery failed
+};
+
+// Time App handle cache indexes
+enum
+{
+  HDL_CURR_TIME_CT_TIME_START,            // Current time start handle
+  HDL_CURR_TIME_CT_TIME_END,              // Current time end handle
+  HDL_CURR_TIME_CT_TIME_CCCD,             // Current time CCCD
+
+  HDL_BATT_LEVEL_START,                   // Battery level start handle
+  HDL_BATT_LEVEL_END,                     // Battery level end handle
+  HDL_BATT_LEVEL_CCCD,                    // Battery level CCCD
+
+
+  HDL_CACHE_LEN
+};
+
+
+// Configuration states
+#define TIMEAPP_CONFIG_START              0x00
+#define TIMEAPP_CONFIG_CMPL               0xFF
+
+#define TIMEAPP_CONFIG_CONN_START         15
 /*********************************************************************
  * MACROS
  */
  /*********************************************************************
  * LOCAL VARIABLES
  */
-static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
+extern  uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
 
 //蓝牙是否是连接状态 1表示蓝牙连接，0 表示蓝牙断开，-1 表示蓝牙在迎宾灯范围外面
 static int8 isBlueToothConnected = 0;
+
+
+// Connection handle
+extern uint16 timeAppConnHandle;
+
+// Handle cache
+extern uint16 timeAppHdlCache[HDL_CACHE_LEN];
+
+
 
 /*********************************************************************
  * FUNCTIONS
@@ -96,6 +148,18 @@ extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
 void setLED_EVT(uint8 value);
 
 extern int8 getBlueToothStatus();
+
+
+/* 
+ * Time App characteristic configuration functions
+ */
+extern uint8 timeAppConfigNext( uint8 state );
+extern uint8 timeAppConfigGattMsg( uint8 state, gattMsgEvent_t *pMsg );
+
+/* 
+ * Time App indication and notification handling functions
+ */
+extern void timeAppIndGattMsg( gattMsgEvent_t *pMsg );
 
 /*********************************************************************
 *********************************************************************/

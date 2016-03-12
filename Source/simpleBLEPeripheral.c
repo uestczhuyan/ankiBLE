@@ -63,10 +63,6 @@
 #include "devinfoservice.h"
 #include "simpleGATTprofile.h"
 
-#if defined( CC2540_MINIDK )
-  #include "simplekeys.h"
-#endif
-
 #include "peripheral.h"
 #include "gapbondmgr.h"
 #include "simpleBLEPeripheral.h"
@@ -140,6 +136,13 @@
 /*********************************************************************
  * GLOBAL VARIABLES
  */
+   
+   
+// Task ID
+uint8 simpleBLEPeripheral_TaskID;
+
+// Connection handle
+uint16 timeAppConnHandle;
 
 /*********************************************************************
  * EXTERNAL VARIABLES
@@ -157,8 +160,6 @@ static int8 lastRSSI = -100;
 static uint8 redLine = 0;
 // TRUE if pairing started
 static uint8 timeAppPairingStarted = FALSE;
-// Connection handle
-uint16 timeAppConnHandle;
 // Bonded state
 static bool timeAppBonded = FALSE;
 // Bonded peer address
@@ -167,6 +168,10 @@ static uint8 timeAppBondedAddr[B_ADDR_LEN];
 static uint8 timeAppDiscPostponed = FALSE;
 // Service discovery complete
 static uint8 timeAppDiscoveryCmpl = FALSE;
+// Characteristic configuration state
+static uint8 timeAppConfigState = TIMEAPP_CONFIG_START;
+// Service discovery state
+static uint8 timeAppDiscState = DISC_IDLE;
 
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
@@ -235,6 +240,9 @@ static void simpleProfileChangeCB( uint8 paramID );
 static void timeAppPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
                                         uint8 uiInputs, uint8 uiOutputs );
 static void timeAppPairStateCB( uint16 connHandle, uint8 state, uint8 status );
+
+//处理ANCS 苹果 事件
+static void timeAppProcessGattMsg( gattMsgEvent_t *pMsg );
 
 
 #if defined( CC2540_MINIDK )
@@ -588,12 +596,45 @@ static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
       simpleBLEPeripheral_HandleKeys( ((keyChange_t *)pMsg)->state, ((keyChange_t *)pMsg)->keys );
       break;
   #endif // #if defined( CC2540_MINIDK )
-
+     case GATT_MSG_EVENT:
+      timeAppProcessGattMsg( (gattMsgEvent_t *) pMsg );
+      break;
+      
   default:
     // do nothing
     break;
   }
 }
+
+/*********************************************************************
+ * @fn      timeAppProcessGattMsg
+ *
+ * @brief   Process GATT messages
+ *
+ * @return  none
+ */
+static void timeAppProcessGattMsg( gattMsgEvent_t *pMsg )
+{
+  if ( pMsg->method == ATT_HANDLE_VALUE_NOTI ||
+       pMsg->method == ATT_HANDLE_VALUE_IND ){
+    timeAppIndGattMsg( pMsg );
+  }else if ( ( pMsg->method == ATT_READ_RSP || pMsg->method == ATT_WRITE_RSP ) ||
+            ( pMsg->method == ATT_ERROR_RSP &&
+              ( pMsg->msg.errorRsp.reqOpcode == ATT_READ_REQ ||
+                pMsg->msg.errorRsp.reqOpcode == ATT_WRITE_REQ ) ) ){
+    timeAppConfigState = timeAppConfigGattMsg ( timeAppConfigState, pMsg );
+    if ( timeAppConfigState == TIMEAPP_CONFIG_CMPL ){
+      timeAppDiscoveryCmpl = TRUE;
+    }
+  }else{
+    //timeAppDiscState = timeAppDiscGattMsg( timeAppDiscState, pMsg );
+    if ( timeAppDiscState == DISC_IDLE ){      
+      // Start characteristic configuration
+      timeAppConfigState = timeAppConfigNext( TIMEAPP_CONFIG_START );
+    }
+  }
+}
+
 
 #if defined( CC2540_MINIDK )
 /*********************************************************************
@@ -750,7 +791,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 		  // Perform configuration of characteristics on connection setup
 		  else
 		  {
-			//timeAppConfigState = timeAppConfigNext( TIMEAPP_CONFIG_CONN_START );
+			timeAppConfigState = timeAppConfigNext( TIMEAPP_CONFIG_CONN_START );
 		  }
 		}
           

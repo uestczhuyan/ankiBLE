@@ -146,7 +146,7 @@ void PWM_init()
   
   Timer1_init();
   
-  Timer3_init();
+  //Timer3_init();
     
   //initRedLine();
   
