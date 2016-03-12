@@ -72,7 +72,7 @@ extern "C"
 
   
   
-  enum
+enum
 {
   DISC_IDLE = 0x00,                       // Idle state
   
@@ -96,6 +96,8 @@ enum
   HDL_CURR_TIME_CT_TIME_START,            // Current time start handle
   HDL_CURR_TIME_CT_TIME_END,              // Current time end handle
   HDL_CURR_TIME_CT_TIME_CCCD,             // Current time CCCD
+  HDL_CURR_TIME_LOC_INFO,                 // Local time info
+  HDL_CURR_TIME_REF_INFO,                 // Reference time info
 
   HDL_BATT_LEVEL_START,                   // Battery level start handle
   HDL_BATT_LEVEL_END,                     // Battery level end handle
