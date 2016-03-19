@@ -392,6 +392,7 @@ static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg )
       break;
 
     case DISC_BATT_SVC:
+      HalLcdWriteString("DIS EVT SVC",HAL_LCD_LINE_8);
       // Service found, store handles
       if ( pMsg->method == ATT_FIND_BY_TYPE_VALUE_RSP &&
            pMsg->msg.findByTypeValueRsp.numInfo > 0 )
@@ -424,6 +425,7 @@ static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg )
 
     case DISC_BATT_CHAR:
       {
+        HalLcdWriteString("DIS EVT CHAR",HAL_LCD_LINE_7);
         uint8   i;
         uint8   *p;
         uint16  handle;
@@ -506,6 +508,7 @@ static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg )
 
     case DISC_BATT_LVL_CCCD:
       {
+        HalLcdWriteString("DIS EVT CCD",HAL_LCD_LINE_6);
         uint8 i;
         
         // Characteristic descriptors found

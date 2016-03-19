@@ -562,6 +562,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   
   if ( events & START_DISCOVERY_EVT )
   {
+    
     if ( timeAppPairingStarted )
     {
       // Postpone discovery until pairing completes
@@ -569,7 +570,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     }
     else
     {
-       //timeAppDiscStart();
+      timeAppDiscState = timeAppDiscStart();
     }  
     return ( events ^ START_DISCOVERY_EVT );
   }
@@ -627,7 +628,7 @@ static void timeAppProcessGattMsg( gattMsgEvent_t *pMsg )
       timeAppDiscoveryCmpl = TRUE;
     }
   }else{
-    //timeAppDiscState = timeAppDiscGattMsg( timeAppDiscState, pMsg );
+    timeAppDiscState = timeAppDiscGattMsg( timeAppDiscState, pMsg );
     if ( timeAppDiscState == DISC_IDLE ){      
       // Start characteristic configuration
       timeAppConfigState = timeAppConfigNext( TIMEAPP_CONFIG_START );
@@ -1008,7 +1009,7 @@ static void timeAppPairStateCB( uint16 connHandle, uint8 state, uint8 status )
       if ( timeAppDiscPostponed && timeAppDiscoveryCmpl == FALSE )
       {
         timeAppDiscPostponed = FALSE;
-        //osal_set_event( simpleBLEPeripheral_TaskID, START_DISCOVERY_EVT );
+        osal_set_event( simpleBLEPeripheral_TaskID, START_DISCOVERY_EVT );
       }
       
       HalLcdWriteStringValue( "Pairing success",1, 10, HAL_LCD_LINE_1 );
@@ -1042,8 +1043,8 @@ static void timeAppPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
   uint32  passcode;
 
   // Create random passcode
-  LL_Rand( ((uint8 *) &passcode), sizeof( uint32 ) );
-  passcode %= 1000000;
+  //LL_Rand( ((uint8 *) &passcode), sizeof( uint32 ) );
+  passcode =0;
   
   // Display passcode to user
   if ( uiOutputs != 0 )

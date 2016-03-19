@@ -151,6 +151,12 @@ void setLED_EVT(uint8 value);
 
 extern int8 getBlueToothStatus();
 
+/* 
+ * Time App service discovery functions
+ */
+extern uint8 timeAppDiscStart( void );
+extern uint8 timeAppDiscGattMsg( uint8 state, gattMsgEvent_t *pMsg );
+
 
 /* 
  * Time App characteristic configuration functions
