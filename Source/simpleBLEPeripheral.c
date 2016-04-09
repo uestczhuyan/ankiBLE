@@ -358,10 +358,10 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // Setup the GAP Bond Manager
   {
-    uint32 passkey = 0;
+    uint32 passkey = 000000;
     uint8 pairMode = GAPBOND_PAIRING_MODE_INITIATE;
-    uint8 mitm = FALSE;
-    uint8 ioCap = GAPBOND_IO_CAP_DISPLAY_ONLY;
+    uint8 mitm = TRUE;
+    uint8 ioCap = GAPBOND_IO_CAP_KEYBOARD_DISPLAY;
     uint8 bonding = TRUE;
     GAPBondMgr_SetParameter( GAPBOND_DEFAULT_PASSCODE, sizeof( uint32 ), &passkey );
     GAPBondMgr_SetParameter( GAPBOND_PAIRING_MODE, sizeof( uint8 ), &pairMode );
@@ -388,7 +388,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   // Setup the SimpleProfile Characteristic Values
   {
     //初始化编译进去的灯光颜色
-    uint8 charValue1[20] = {0, 1,100,100,100,255,255,255,   255,200,255,255,250,100,    20,100,100,20,100,10};
+    uint8 charValue1[20] = {0, 1,100,100,100,255,255,255,   200,250,100,150,100,100,    20,100,100,20,100,10};
     uint8 charValue2[20] = {20,1,1,20,1,1,20,1,250,20,1,250,20,1,250,20,1,250,1};
     uint8 charValue3 = 3;
     uint8 charValue4 = 4;
@@ -1040,11 +1040,11 @@ static void timeAppPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
 {
 #if (HAL_LCD == TRUE)
 
-  uint32  passcode;
+  uint32  passcode = 000000;
 
   // Create random passcode
   //LL_Rand( ((uint8 *) &passcode), sizeof( uint32 ) );
-  passcode =0;
+  //passcode =0;
   
   // Display passcode to user
   if ( uiOutputs != 0 )
