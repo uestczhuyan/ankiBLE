@@ -540,12 +540,11 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
     if(P0_4 == 1){
-        //HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
+        HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
         init_RedLine_Switch(1);
         osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_REDLINE_EVT,SBP_LINE_EVT_PERIOD);
         redLine=1;
     }else{
-        //HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
         redLine=0;
     }
 
@@ -555,6 +554,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   
   if ( events & SBP_REDLINE_EVT ){
       if(redLine == 0){
+        HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
         init_RedLine_Switch(0);
       }
       return (events ^ SBP_REDLINE_EVT);

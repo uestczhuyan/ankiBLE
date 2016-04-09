@@ -28,7 +28,7 @@
 
 
 #define SWITCHQI P0_2
-#define SWITCHLight P0_3
+#define SWITCHLight P1_5
 
 #define HAL_RED_LINE_PIN       4
 
@@ -146,16 +146,16 @@ void PWM_init()
   
   Timer1_init();
   
-  //Timer3_init();
+  Timer3_init();
     
-  //initRedLine();
+  initRedLine();
   
   //把2.0 脚设置为 QI开关电路
-  //P0DIR |=0X2C;
-  //P0SEL &=~0X2C;
-  //P0_3=0;
-  //P0_2=0;
-  //P0_5=0;
+  P0DIR |=0X20;
+  P0SEL &=~0X20;
+  
+  P1DIR |=0X30;
+  P1SEL &=~0X30;
 
   //Timer4_init();
   
