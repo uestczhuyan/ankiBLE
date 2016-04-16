@@ -67,7 +67,8 @@ const uint8 timeAppConfigList[] =
   HDL_CURR_TIME_CT_TIME_START,            // Current time
   HDL_BATT_LEVEL_START,                   // Battery level
   HDL_CURR_TIME_CT_TIME_CCCD,             // Current time CCCD
-  HDL_BATT_LEVEL_CCCD                    // Battery level CCCD
+  HDL_BATT_LEVEL_CCCD,                    // Battery level CCCD
+  HDL_ANCS_NTF_CCCD
 };
 
 // start index of alert notification control point in config list
@@ -133,6 +134,7 @@ uint8 timeAppConfigNext( uint8 state )
     // Set notification for these characteristics
     case HDL_CURR_TIME_CT_TIME_CCCD:
     case HDL_BATT_LEVEL_CCCD:
+    case  HDL_ANCS_NTF_CCCD:
       read = FALSE;
       writeReq.len = 2;
       writeReq.value[0] = LO_UINT16(GATT_CLIENT_CFG_NOTIFY);
@@ -184,19 +186,19 @@ uint8 timeAppConfigGattMsg( uint8 state, gattMsgEvent_t *pMsg )
     switch ( timeAppConfigList[state] )
     {
       case HDL_CURR_TIME_CT_TIME_START:
-        HalLcdWriteStringValue( "time start ",state, 10,  HAL_LCD_LINE_5 );
+        //HalLcdWriteStringValue( "time start ",state, 10,  HAL_LCD_LINE_5 );
         // Set clock to time read from time server
         //timeAppClockSet( pMsg->msg.readRsp.value );
         break;
 
       case HDL_BATT_LEVEL_START:
         // Display battery level
-        HalLcdWriteStringValue( "batt start ",state, 10,  HAL_LCD_LINE_4 );
+        //HalLcdWriteStringValue( "batt start ",state, 10,  HAL_LCD_LINE_4 );
         HalLcdWriteStringValue( "S_Battery%", pMsg->msg.readRsp.value[0], 10, HAL_LCD_LINE_1 );
         break;
 
       case HDL_CURR_TIME_CT_TIME_CCCD:
-        HalLcdWriteStringValue( "time ccd ",state, 10,  HAL_LCD_LINE_2 );
+        //HalLcdWriteStringValue( "time ccd ",state, 10,  HAL_LCD_LINE_2 );
         break;
 
       default:

@@ -177,7 +177,7 @@ static uint8 timeAppDiscState = DISC_IDLE;
 static uint8 scanRspData[] =
 {
   // complete name
-  0x14,   // length of this data
+  0x5,   // length of this data
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
   0x41,   // 'A'
   0x4e,   // 'N'
@@ -220,12 +220,17 @@ static uint8 advertData[] =
   LO_UINT16(ALERT_NOTIF_SERV_UUID),
   HI_UINT16(ALERT_NOTIF_SERV_UUID),
   LO_UINT16(BATT_SERV_UUID),
-  HI_UINT16(BATT_SERV_UUID)
+  HI_UINT16(BATT_SERV_UUID),
+  
+  0x11,
+  GAP_ADTYPE_SERVICES_LIST_128BIT,
+  // ANCS service UUID
+  0xD0, 0x00, 0x2D, 0x12, 0x1E, 0x4B, 0x0F, 0xA4, 0x99, 0x4E, 0xCE, 0xB5, 0x31, 0xF4, 0x05, 0x79
 
 };
 
 // GAP GATT Attributes
-static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "Simple BLE Peripheral";
+static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "ANKI";
 
 /*********************************************************************
  * LOCAL FUNCTIONS
@@ -360,8 +365,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   {
     uint32 passkey = 000000;
     uint8 pairMode = GAPBOND_PAIRING_MODE_INITIATE;
-    uint8 mitm = TRUE;
-    uint8 ioCap = GAPBOND_IO_CAP_KEYBOARD_DISPLAY;
+    uint8 mitm = FALSE;
+    uint8 ioCap = GAPBOND_IO_CAP_DISPLAY_YES_NO;
     uint8 bonding = TRUE;
     GAPBondMgr_SetParameter( GAPBOND_DEFAULT_PASSCODE, sizeof( uint32 ), &passkey );
     GAPBondMgr_SetParameter( GAPBOND_PAIRING_MODE, sizeof( uint8 ), &pairMode );
@@ -540,7 +545,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     //执行灯光change的函数
     if(P0_4 == 1){
-        HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
+        //HalLcdWriteString("HEIGHs",HAL_LCD_LINE_1);
         init_RedLine_Switch(1);
         osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_REDLINE_EVT,SBP_LINE_EVT_PERIOD);
         redLine=1;
@@ -554,7 +559,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   
   if ( events & SBP_REDLINE_EVT ){
       if(redLine == 0){
-        HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
+        //HalLcdWriteString("LOWs",HAL_LCD_LINE_1);
         init_RedLine_Switch(0);
       }
       return (events ^ SBP_REDLINE_EVT);

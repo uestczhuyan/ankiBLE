@@ -87,6 +87,11 @@ enum
   DISC_BATT_CHAR,                         // Discover all characteristics
   DISC_BATT_LVL_CCCD,                     // Discover battery level CCCD
   
+  DISC_ANCS_START = 0x30,            // ANCS service
+  DISC_ANCS_SVC,                     // Discover service
+  DISC_ANCS_CHAR,                    // Discover all characteristics
+  DISC_ANCS_CCCD,  
+  
   DISC_FAILED = 0xFF                      // Discovery failed
 };
 
@@ -102,6 +107,10 @@ enum
   HDL_BATT_LEVEL_START,                   // Battery level start handle
   HDL_BATT_LEVEL_END,                     // Battery level end handle
   HDL_BATT_LEVEL_CCCD,                    // Battery level CCCD
+  
+  HDL_ANCS_NTF_NOTIF_START,             // ANCS notification characteristic start handle
+  HDL_ANCS_NTF_NOTIF_END,               // ANCS notification characteristic end handle
+  HDL_ANCS_NTF_CCCD,                    // ANCS notification CCCD
 
 
   HDL_CACHE_LEN

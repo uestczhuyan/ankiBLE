@@ -60,6 +60,19 @@
 
 // Length of Characteristic declaration + handle with 16 bit UUID
 #define CHAR_DESC_HDL_UUID16_LEN        7
+
+// Length of Characteristic declaration + handle with 16 bit UUID 5+2bytes, for CC254x, 8bits address
+#define CHAR_DESC_HDL_UUID128_LEN        21  // 5 + 16bytes = 21
+
+
+// 7905F431-B5CE-4E99-A40F-4B1E122D00D0
+#define ANCS_SVC_UUID 0xD0, 0x00, 0x2D, 0x12, 0x1E, 0x4B, 0x0F, 0xA4, 0x99, 0x4E, 0xCE, 0xB5, 0x31, 0xF4, 0x05, 0x79
+// Notification Source: UUID 9FBF120D-6301-42D9-8C58-25E699A21DBD (notifiable)
+#define ANCS_NOTIF_SRC_CHAR_UUID        0x1DBD // Last 2 bytes of the 128bit-16bytes UUID
+// Control point: UUID 69D1D8F3-45E1-49A8-9821-9BBDFDAAD9D9 (writeable with response)
+#define ANCS_CTRL_PT_CHAR_UUID          0xD9D9
+// Data Source: UUID 22EAC6E9-24D6-4BB5-BE44-B36ACE7C7BFB (notifiable)
+#define ANCS_DATA_SRC_CHAR_UUID         0x7BFB
    
 /*********************************************************************
  * TYPEDEFS
@@ -95,7 +108,7 @@ static uint8 timeAppEndHdlIdx;
 
 static uint8 TimeAppDiscCurrTime( uint8 state, gattMsgEvent_t *pMsg );
 static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg );
-
+static uint8 Ancs_discover(uint8 state, gattMsgEvent_t *pMsg);
 
 
 /*********************************************************************
@@ -132,6 +145,14 @@ uint8 timeAppDiscGattMsg( uint8 state, gattMsgEvent_t *pMsg )
         state = TimeAppDiscBatt( state, pMsg );
         if ( state == DISC_FAILED || state == DISC_IDLE )
         {
+          state = DISC_ANCS_START;
+        }
+        break;
+        // ANCS service
+      case DISC_ANCS_START:
+        state = Ancs_discover(state, pMsg);
+        if (state == DISC_FAILED)
+        {
           state = DISC_IDLE;
         }
         break;
@@ -158,6 +179,190 @@ uint8 timeAppDiscStart( void )
   
   // Start discovery with first service
   return timeAppDiscGattMsg( DISC_CURR_TIME_START, NULL );
+}
+
+static uint8  Ancs_discover(uint8 state, gattMsgEvent_t *pMsg)
+{
+  uint8  newState = state; 
+  
+  switch (state)
+  {
+    case DISC_ANCS_START:  
+      {
+        uint8 uuid[ATT_UUID_SIZE] = {ANCS_SVC_UUID};
+
+        // Initialize service discovery variables
+        timeAppSvcStartHdl = timeAppSvcEndHdl = 0;
+        timeAppEndHdlIdx = 0;
+        
+        // Discover service by UUID
+        GATT_DiscPrimaryServiceByUUID(timeAppConnHandle, uuid,
+                                      ATT_UUID_SIZE, simpleBLEPeripheral_TaskID);      
+
+        newState = DISC_ANCS_SVC;
+      }
+      break;
+
+    case DISC_ANCS_SVC:
+      // Service found, store handles
+      if (pMsg->method == ATT_FIND_BY_TYPE_VALUE_RSP &&
+          pMsg->msg.findByTypeValueRsp.numInfo > 0)
+      {
+        timeAppSvcStartHdl = pMsg->msg.findByTypeValueRsp.handlesInfo[0].handle;
+        timeAppSvcEndHdl = pMsg->msg.findByTypeValueRsp.handlesInfo[0].grpEndHandle;
+      }
+      
+      // If procedure complete
+      if ((pMsg->method == ATT_FIND_BY_TYPE_VALUE_RSP  && 
+           pMsg->hdr.status == bleProcedureComplete) ||
+          (pMsg->method == ATT_ERROR_RSP))
+      {
+        // If service found
+        if (timeAppSvcStartHdl != 0)
+        {
+          // Discover all characteristics
+          GATT_DiscAllChars(timeAppConnHandle, timeAppSvcStartHdl,
+                            timeAppSvcEndHdl, simpleBLEPeripheral_TaskID);
+          
+          newState = DISC_ANCS_CHAR;
+        }
+        else
+        {
+          // Service not found
+          newState = DISC_FAILED;
+        }
+      }    
+      break;
+
+    case DISC_ANCS_CHAR:
+      {
+        // Characteristics found
+        uint8    i;
+        uint8   *p;
+        uint16   handle;
+        uint16  uuid;
+        if (pMsg->method == ATT_READ_BY_TYPE_RSP &&
+            pMsg->msg.readByTypeRsp.numPairs > 0 && 
+            pMsg->msg.readByTypeRsp.len == CHAR_DESC_HDL_UUID128_LEN)
+        {
+          
+          p = pMsg->msg.readByTypeRsp.dataList;
+          
+          // For each characteristic declaration
+          for (i = pMsg->msg.readByTypeRsp.numPairs; i > 0; i--)
+          {
+            // Parse characteristic declaration
+            handle = BUILD_UINT16(p[3], p[4]);
+            uuid = BUILD_UINT16(p[5], p[6]);
+                   
+            // If looking for end handle
+            if (timeAppEndHdlIdx != 0)
+            {
+              // End handle is one less than handle of characteristic declaration
+              timeAppHdlCache[timeAppEndHdlIdx] = BUILD_UINT16(p[0], p[1]) - 1;
+              
+              timeAppEndHdlIdx = 0;
+            }
+
+            // If UUID is of interest, store handle
+            switch (uuid)
+            {
+              case ANCS_NOTIF_SRC_CHAR_UUID:
+                timeAppHdlCache[HDL_ANCS_NTF_NOTIF_START] = handle;
+                timeAppEndHdlIdx = HDL_ANCS_NTF_NOTIF_END;
+                HalLcdWriteStringValue( "Ntfi char",1, 10,  HAL_LCD_LINE_6 );
+                break;
+                
+              default:
+                break;
+            }
+            
+            p += CHAR_DESC_HDL_UUID128_LEN;
+          }
+        }
+          
+        // If procedure complete
+        if ((pMsg->method == ATT_READ_BY_TYPE_RSP  && 
+             pMsg->hdr.status == bleProcedureComplete) ||
+            (pMsg->method == ATT_ERROR_RSP))
+        {
+          // Special case of end handle at end of service
+          if (timeAppEndHdlIdx != 0)
+          {
+            timeAppHdlCache[timeAppEndHdlIdx] = timeAppSvcEndHdl;
+            timeAppEndHdlIdx = 0;
+          }
+          
+          // If didn't find ANCS notification source characteristic, it is absolutely wrong
+          if (timeAppHdlCache[HDL_ANCS_NTF_NOTIF_START] == 0)
+          {
+            HalLcdWriteStringValue( "cant  ANCS",1, 10,  HAL_LCD_LINE_6 );
+            newState = DISC_FAILED;
+          }
+          else if (timeAppHdlCache[HDL_ANCS_NTF_NOTIF_START] <
+                   timeAppHdlCache[HDL_ANCS_NTF_NOTIF_END])
+          {
+            // Discover ANCS Notification Source characteristic client configuration
+            GATT_DiscAllCharDescs(timeAppConnHandle,
+                                  timeAppHdlCache[HDL_ANCS_NTF_NOTIF_START] + 1,
+                                  timeAppHdlCache[HDL_ANCS_NTF_NOTIF_END],
+                                  simpleBLEPeripheral_TaskID); 
+            HalLcdWriteStringValue( "ANCS dis allChar",1, 10,  HAL_LCD_LINE_6 );            
+            newState = DISC_ANCS_CCCD;
+          }
+          else
+          { 
+            newState = DISC_FAILED;
+          }
+        }  
+      }      
+      break;
+
+    case DISC_ANCS_CCCD:
+      {
+        // Characteristic descriptors found
+        if (pMsg->method == ATT_FIND_INFO_RSP &&
+            pMsg->msg.findInfoRsp.numInfo > 0 && 
+            pMsg->msg.findInfoRsp.format == ATT_HANDLE_BT_UUID_TYPE)
+        {
+          uint8  i;
+          
+          // For each handle/uuid pair
+          for (i = 0; i < pMsg->msg.findInfoRsp.numInfo; i++)
+          {
+            // Look for CCCD
+            if ( (pMsg->msg.findInfoRsp.info.btPair[i].uuid[0] ==
+                  LO_UINT16(GATT_CLIENT_CHAR_CFG_UUID)) &&
+                 (pMsg->msg.findInfoRsp.info.btPair[i].uuid[1] ==
+                  HI_UINT16(GATT_CLIENT_CHAR_CFG_UUID)) )
+            {
+              // CCCD found
+               // CCCD found
+              timeAppHdlCache[HDL_ANCS_NTF_CCCD] =
+                pMsg->msg.findInfoRsp.info.btPair[i].handle; 
+              break;
+            }
+          }
+        }
+        
+        // If procedure complete
+        if ( ( pMsg->method == ATT_FIND_INFO_RSP  && 
+               pMsg->hdr.status == bleProcedureComplete ) ||
+             ( pMsg->method == ATT_ERROR_RSP ) )
+        {
+          HalLcdWriteStringValue( "ANCS cccd",pMsg->method, 10,  HAL_LCD_LINE_6 );
+          newState = DISC_IDLE;
+        }
+      }
+      break;
+
+    default:
+      break;
+  }
+  // For Get Notificaion Attribute statement use
+  //serviceDiscoveryState = newState;
+  
+  return newState;
 }
 
 /*********************************************************************
@@ -346,7 +551,7 @@ static uint8 TimeAppDiscCurrTime( uint8 state, gattMsgEvent_t *pMsg )
                pMsg->hdr.status == bleProcedureComplete ) ||
              ( pMsg->method == ATT_ERROR_RSP ) )
         {
-          newState = DISC_IDLE;
+          newState = DISC_ANCS_START;
         }
       }
       break;
@@ -392,7 +597,7 @@ static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg )
       break;
 
     case DISC_BATT_SVC:
-      HalLcdWriteString("DIS EVT SVC",HAL_LCD_LINE_8);
+      //HalLcdWriteString("DIS EVT SVC",HAL_LCD_LINE_8);
       // Service found, store handles
       if ( pMsg->method == ATT_FIND_BY_TYPE_VALUE_RSP &&
            pMsg->msg.findByTypeValueRsp.numInfo > 0 )
@@ -425,7 +630,7 @@ static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg )
 
     case DISC_BATT_CHAR:
       {
-        HalLcdWriteString("DIS EVT CHAR",HAL_LCD_LINE_7);
+        //HalLcdWriteString("DIS EVT CHAR",HAL_LCD_LINE_7);
         uint8   i;
         uint8   *p;
         uint16  handle;
@@ -508,7 +713,7 @@ static uint8 TimeAppDiscBatt( uint8 state, gattMsgEvent_t *pMsg )
 
     case DISC_BATT_LVL_CCCD:
       {
-        HalLcdWriteString("DIS EVT CCD",HAL_LCD_LINE_6);
+        //HalLcdWriteString("DIS EVT CCD",HAL_LCD_LINE_6);
         uint8 i;
         
         // Characteristic descriptors found
